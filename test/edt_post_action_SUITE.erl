@@ -15,18 +15,23 @@ end_per_suite(_Config) ->
     edt_out:stop(),
     ok.
 
+init_per_testcase(test_start_link, Config) ->
+    Config;
 init_per_testcase(_TestCase, Config) ->
     {ok, _Pid} = edt_post_action:start(),
     Config.
 
 end_per_testcase(_TestCase, _Config) ->
-    edt_post_action:stop(),
+    catch edt_post_action:stop(),
     ok.
 
 all() ->
-    [test_crud,
-     test_event,
-     test_post_action_stop].
+    [test_async_event,
+     test_crud,
+     test_start_link,
+     test_sync_event,
+     test_post_action_stop,
+     test_post_action_error].
 
 test_crud(_Config) ->
     Fun1 = fun() -> ok end,
@@ -40,13 +45,31 @@ test_crud(_Config) ->
     edt_post_action:delete(test2),
     [] = edt_post_action:list(),
 
-    edt_post_action:add(eunit, {eunit, kernel}),
-    edt_post_action:add(ct, {ct, kernel_SUITE}),
-    [ct, eunit] = edt_post_action:list(),
-
     ok.
 
-test_event(_Config) ->
+test_async_event(_Config) ->
+    Table = ets:new(test_event, [public, ordered_set]),
+    Now = erlang:system_time(microsecond),
+    Fun =
+        fun(Name) ->
+                fun() ->
+                        ets:insert(Table, {Name, erlang:system_time(microsecond) - Now})
+                end
+        end,
+    edt_post_action:add(test1, Fun(test1)),
+    edt_post_action:add(test2, Fun(test2)),
+    edt_post_action:add(test3, Fun(test3)),
+    [] = ets:tab2list(Table),
+    ok = edt_post_action:event(testing),
+    Expected = [test1, test2, test3],
+    FunActual =
+        fun() ->
+                lists:sort([Name || {Name ,_} <- ets:tab2list(Table)])
+        end,
+    edt_lib:retry(FunActual, Expected),
+    ok.
+
+test_sync_event(_Config) ->
     Table = ets:new(test_event, [public, ordered_set]),
     Now = erlang:system_time(microsecond),
     Fun =
@@ -77,4 +100,20 @@ test_post_action_stop(_Config) ->
                 {error, {stop, test3}}],
     Actual = edt_post_action:sync_event(testing),
     Expected = Actual,
+    ok.
+
+test_post_action_error(_Config) ->
+    Fun = fun() -> error(fail) end,
+    edt_post_action:add(test1, Fun),
+    edt_post_action:add(test2, Fun),
+    edt_post_action:add(test3, Fun),
+    Expected = [{error,{test1,{error,fail}}},
+                {error,{test2,{error,fail}}},
+                {error,{test3,{error,fail}}}],
+    Actual = edt_post_action:sync_event(testing),
+    Expected = Actual,
+    ok.
+
+test_start_link(_Config) ->
+    {ok, _Pid} = edt_post_action:start_link(),
     ok.

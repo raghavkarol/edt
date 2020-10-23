@@ -16,7 +16,6 @@
 -export([auto_process/0,
          http_port/0,
          home/0,
-         ensure_code_path/1,
          ignore_regex/0,
          module_name/1,
          outdir/1,
@@ -49,7 +48,12 @@ compile(Path, Opts) ->
             Opts1 = Opts ++ compile_opts(Path),
             case compile:file(Path, Opts1) of
                 {ok, Module, Warnings} ->
-                    ensure_code_path(Path),
+                    case proplists:is_defined(strong_validation, Opts) of
+                        true ->
+                            ok;
+                        false ->
+                            ensure_code_path(Path)
+                    end,
                     reload(Module),
                     {ok, {Path, Module, Warnings}};
                 {error, Errors, Warnings} ->
@@ -63,6 +67,8 @@ reload(Module) ->
 
 test(eunit, Module) ->
     eunit(Module);
+test(ct, {Module, TestCase}) ->
+    ct(Module, TestCase);
 test(ct, Module) ->
     ct(Module).
 
@@ -182,13 +188,7 @@ module_name(Path) ->
 ensure_code_path(Path) ->
     OutDir = edt:outdir(Path),
     OutDir1 = filename:absname(OutDir),
-    case lists:member(OutDir1, code:get_path()) of
-        true ->
-            ok;
-        false ->
-            edt_out:stdout("adding ~p to code path", [OutDir1]),
-            code:add_patha(OutDir1)
-    end.
+    code:add_patha(OutDir1).
 
 eunit(Module) ->
     Opts = eunit_opts(),
@@ -198,7 +198,6 @@ ct(Module) ->
     ct(Module, undefined).
 
 ct(Module, TestCase) ->
-    TestCase = undefined,
     LogDir = "./_build/test/logs/",
     Dir = filename:dirname(source_path(Module)),
     Opts = [{auto_compile, false},
@@ -220,8 +219,10 @@ ct_groups(Module, Case) ->
                 []
         end,
     case Group of
-        [] -> Group;
-        _ -> [{group, Group}]
+        [] ->
+            [];
+        _ ->
+            [{group, Group}]
     end.
 
 %%

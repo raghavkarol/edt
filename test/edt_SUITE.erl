@@ -9,15 +9,11 @@ suite() ->
     [{timetrap, {seconds, 5}}].
 
 init_per_suite(Config) ->
+    DataDir = ?config(data_dir, Config),
+    ct_helper:setup_test_data(DataDir),
     Config.
 
 end_per_suite(_Config) ->
-    ok.
-
-init_per_group(_GroupName, Config) ->
-    Config.
-
-end_per_group(_GroupName, _Config) ->
     ok.
 
 init_per_testcase(_TestCase, Config) ->
@@ -30,13 +26,21 @@ end_per_testcase(_TestCase, _Config) ->
 
 all() ->
     [test_file_type,
+     test_compile,
+     test_eunit,
+     test_ct,
      test_get_env,
      test_home,
      test_includes,
      test_module_name,
      test_outdir,
      test_parse_path,
+     test_http_port,
      test_relative_path].
+
+test_http_port(_Config) ->
+    65000 = edt:http_port(),
+    ok.
 
 test_home(_Config) ->
     {ok, Pwd} = file:get_cwd(),
@@ -128,6 +132,7 @@ test_module_name(_Config) ->
     ok.
 
 test_get_env(_Config) ->
+    undefined = edt:get_env(testing),
     none = edt:get_env(testing, none),
 
     os:putenv("EDT_TESTING", "OS ENV value"),
@@ -139,6 +144,7 @@ test_get_env(_Config) ->
     'APP ENV value' = edt:get_env(testing, none),
     os:unsetenv("EDT_TESTING"),
     application:unset_env(edt, testing),
+
     ok.
 
 test_relative_path(_Config) ->
@@ -156,4 +162,59 @@ test_relative_path(_Config) ->
 
     Path5 = "/Users/name/working/edt/testing.erl",
     {error, {Path5, unknown}} = edt:relative_path(Path5),
+    ok.
+
+test_compile(_Config) ->
+    {ok, Cwd} = file:get_cwd(),
+    TestDir = filename:basename(Cwd),
+
+    File0 = "eunit/src/why/non_existing.erl",
+    {error, {File0, unknown}} = edt:compile(File0),
+
+    {error, {File1, [{File1, Errors1}], Warnings1}} = edt:compile("src/non_existing.erl"),
+    [{none,compile,{epp,enoent}}] = Errors1,
+    [] = Warnings1,
+
+    File2 = "src/test_compile_fail.erl",
+    {error, {File2, [{File2, Errors2}], Warnings2}} = edt:compile(File2),
+    [{4, erl_parse, ["syntax error before: ",[]]}] = Errors2,
+    [] = Warnings2,
+
+    File2 = "src/test_compile_fail.erl",
+    {error, {File2, [{File2, Errors2}], Warnings2}} = edt:compile(File2, [strong_validation]),
+    [{4, erl_parse, ["syntax error before: ",[]]}] = Errors2,
+    [] = Warnings2,
+
+    NewEbinDir = Cwd ++ "/_build/default/lib/" ++ TestDir ++ "/ebin",
+    CodePath1 = code:get_path(),
+    false = lists:member(NewEbinDir, CodePath1),
+    File3 = "src/test_compile_ok.erl",
+    {ok, {File3, test_compile_ok, Errors3}} = edt:compile(File3, []),
+    [] = Errors3,
+    CodePath2 = code:get_path(),
+    true = lists:member(NewEbinDir, CodePath2),
+
+    File3 = "src/test_compile_ok.erl",
+    {ok, {File3, test_compile_ok, Errors3}} = edt:compile(File3, [strong_validation]),
+    [] = Errors3,
+
+    ok.
+
+test_eunit(_Config) ->
+    {ok, _} = edt:compile("test/eunit_test1.erl"),
+    ok = edt:test(eunit, eunit_test1),
+    ok.
+
+test_ct(_Config) ->
+    {ok, _} = edt:compile("test/ct_SUITE.erl"),
+    {error, _} = edt:test(ct, ct_SUITE),
+
+    {ok, _} = edt:compile("test/ct_groups_empty_SUITE.erl"),
+    {error, _} = edt:test(ct, ct_groups_empty_SUITE),
+
+    {ok, _} = edt:compile("test/ct_groups_SUITE.erl"),
+    {error, _} = edt:test(ct, ct_groups_SUITE),
+
+    {ok, _} = edt:compile("test/ct_groups_SUITE.erl"),
+    {error, _} = edt:test(ct, {ct_groups_SUITE, test_one}),
     ok.

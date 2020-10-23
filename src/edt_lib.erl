@@ -12,7 +12,8 @@
 -export([retry/2,
          retry/3]).
 
--export([which_test/1]).
+-export([parse_rebar3_profile/1,
+         which_test/1]).
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
@@ -96,6 +97,8 @@ to_string(V) when is_binary(V) ->
     binary_to_list(V);
 to_string(V) when is_integer(V) ->
     integer_to_list(V);
+to_string(V) when is_atom(V) ->
+    atom_to_list(V);
 to_string(V) when is_list(V) ->
     V.
 
@@ -129,6 +132,15 @@ which_test(Path) ->
             eunit
     end.
 
+parse_rebar3_profile(Cmd) ->
+    case re:run(Cmd, "rebar3\s+shell|as\s+(.+?)\s+shell", [{capture, all, list}]) of
+        {match, [_, Profile]} ->
+            Profile;
+        {match, [_]} ->
+            "default";
+        Result ->
+            {error, {not_parseable, {Result, Cmd}}}
+    end.
 
 %% ---------------------------------------------------------
 %% Unit tests
@@ -175,6 +187,7 @@ to_integer_test() ->
 to_string_test() ->
     "one" = to_string(<<"one">>),
     "1" = to_string(1),
+    "1" = to_string('1'),
     "one" = to_string("one"),
     ok.
 
@@ -204,6 +217,60 @@ format_errors_test() ->
                   "_checkouts/edt/src/edt.erl:194: Error: the guard for this clause evaluates to 'false'", "\n">>,
     Actual = format(Msgs, error),
     Expected = Actual,
+    ok.
+
+report_test() ->
+    Msgs = [{"testing.erl",
+             [{36,erl_lint,{unused_var,'Errors'}},
+              {36,erl_lint,{unused_var,'Warnings'}},
+              {194,sys_core_fold,no_clause_match},
+              {194,sys_core_fold,nomatch_guard}]}],
+    Expected1 = ["compiled ","testing.erl",
+                [$\n,
+                 <<"testing.erl:36: Warning: variable 'Errors' is unused", "\n",
+                   "testing.erl:36: Warning: variable 'Warnings' is unused", "\n",
+                   "testing.erl:194: Warning: no clause will ever match", "\n",
+                   "testing.erl:194: Warning: the guard for this clause evaluates to 'false'", "\n">>]],
+    Resp1 = {"testing.erl", testing, Msgs},
+    Actual1 = report({ok, Resp1}),
+    Actual1 = Expected1,
+
+    Resp2 = {"testing.erl", testing, []},
+    Actual2 = report({ok, Resp2}),
+    Expected2 = ["compiled ","testing.erl",[]],
+    Actual2 = Expected2,
+
+    Actual3 = report({error, {"testing1", Msgs, []}}),
+    Expected3 = ["ERROR ","testing1"," ",$\n,
+                 <<"testing.erl:36: Error: variable 'Errors' is unused", "\n",
+                   "testing.erl:36: Error: variable 'Warnings' is unused", "\n",
+                   "testing.erl:194: Error: no clause will ever match" "\n",
+                   "testing.erl:194: Error: the guard for this clause evaluates to 'false'", "\n">>,
+                 $\n,
+                 []],
+    Expected3 = Actual3,
+
+    Actual4 = report({error, {"testing1", [], Msgs}}),
+    Expected4 = ["ERROR ","testing1"," ", $\n,
+                 <<"\n">>, $\n,
+                 ["Warnings",$\n,
+                  <<"testing.erl:36: Warning: variable 'Errors' is unused", "\n",
+                    "testing.erl:36: Warning: variable 'Warnings' is unused", "\n",
+                    "testing.erl:194: Warning: no clause will ever match", "\n",
+                    "testing.erl:194: Warning: the guard for this clause evaluates to 'false'", "\n">>]],
+    Actual4 = Expected4,
+
+    Actual5 = report({error, {"testing1.erl", unknown}}),
+    Expected5 = ["ignored ", "testing1.erl", " do not know how to handle it"],
+    Actual5 = Expected5,
+    ok.
+
+parse_rebar3_profile_test() ->
+    "test" = parse_rebar3_profile("rebar3 as test shell --apps edt"),
+    "default" = parse_rebar3_profile("rebar3 shell --apps edt"),
+
+    {error, Error} = parse_rebar3_profile("erl"),
+    {not_parseable, {nomatch,"erl"}} = Error,
     ok.
 
 -endif.

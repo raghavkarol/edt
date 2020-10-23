@@ -70,7 +70,6 @@ handle_event({call, From}, {test, {Type, Path}}, _State, Data) ->
     case Result of
         {ok, {Path1, Module, Warnings}} ->
             edt_out:stdout("~s", [edt_lib:format(Warnings, warning)], no_nl),
-            edt:ensure_code_path(Path1),
             edt:test(Type, Module),
             Reply = ok;
         {error, {Path1, Errors, Warnings}} ->

@@ -15,8 +15,9 @@
          sync_event/1]).
 
 %% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/2,
-         terminate/2, code_change/3, format_status/2]).
+-export([init/1,
+         handle_call/3,
+         handle_cast/2]).
 
 -define(SERVER, ?MODULE).
 
@@ -60,9 +61,9 @@ sync_event(Event) ->
 %% actions. A post action can be a
 %%
 %% - A function ::: Run the function
-%% - A tuple
-%%   - {eunit, Module} ::: run eunit tests for the module
-%%   - {ct, Module}    ::: run common tests for the module
+%%   Example:
+%%
+%%    add(fun() -> edt_api:test(my_erl_module) end)
 %%
 %% Many post actions are allowed and are uniquely identified by
 %% `Name'. Post actions are run in the order of name, example
@@ -75,13 +76,6 @@ sync_event(Event) ->
 %% `throw(stop)' in the post action function
 %%
 %% @end
-add(Name, {Type, Module}) when Type == eunit;
-                               Type == ct ->
-    Fun =
-        fun() ->
-                edt:test(Type, Module)
-        end,
-    add(Name, Fun);
 add(Name, Fun) when is_atom(Name),
                     is_function(Fun) ->
     gen_server:call(?SERVER, {add, {Name, Fun}}).
@@ -118,18 +112,6 @@ handle_call({event, Event}, _From, State) ->
 handle_cast({event, Event}, State) ->
     actions(Event),
     {noreply, State}.
-
-handle_info(_Info, State) ->
-    {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
-
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-
-format_status(_Opt, Status) ->
-    Status.
 
 %% ---------------------------------------------------------
 %% internal functions
