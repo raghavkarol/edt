@@ -18,10 +18,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Dependencies
-      run: apt-get install inotify-tools
-    - name: Compile
-      run: rebar3 compile
-    - name: Run tests
-      run: rebar3 do eunit, ct
-    - name: Coverage
-      run: rebar3 coverage
+      run:  apt update -y && apt install -y inotify-tools
+    - name: Run Tests
+      run: make test

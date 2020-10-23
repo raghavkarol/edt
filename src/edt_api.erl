@@ -19,9 +19,14 @@ compile(Module) when is_atom(Module) ->
 compile(Path) when is_list(Path);
                    is_binary(Path) ->
     Result = edt:compile(Path),
-    Report = edt_lib:report(Result),
-    edt_out:stdout(Report),
-    ok.
+    case Result of
+        {ok, _} ->
+            Report = edt_lib:report(Result),
+            edt_out:stdout(Report),
+            ok;
+        {error, _} = E ->
+            E
+    end.
 
 %% @doc
 %%

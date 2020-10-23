@@ -11,16 +11,16 @@
          stop/0]).
 
 -export([changes/0,
-         process_changes/0]).
-
--export([test/1]).
+         process_changes/0,
+         stats/0]).
 
 %% gen_statem callbacks
--export([callback_mode/0, init/1, terminate/3, code_change/4]).
+-export([callback_mode/0, init/1, terminate/3]).
 -export([handle_event/4]).
 
 -define(SERVER, ?MODULE).
 -define(CHANGES, edt_srv_changes).
+-define(STATS, edt_srv_stats).
 
 -record(data, {}).
 
@@ -38,16 +38,14 @@ start_link(Dir) ->
 stop() ->
     gen_statem:stop(?SERVER).
 
+stats() ->
+    gen_statem:call(?SERVER, stats).
+
 changes() ->
     gen_statem:call(?SERVER, changes).
 
 process_changes() ->
     gen_statem:call(?SERVER, process_changes).
-
-test({Type, Path})
-  when Type == eunit;
-       Type == ct ->
-    gen_statem:call(?SERVER, {test, {Type, Path}}).
 
 %% -------------------------------------------------------------------
 %% gen_statem callbacks
@@ -57,6 +55,8 @@ callback_mode() ->
 
 init([Dir]) ->
     ets:new(?CHANGES, [named_table, {keypos, #change.path}]),
+    ets:new(?STATS, [named_table, {keypos, 1}]),
+    ets:insert_new(?STATS, #stats{}),
     fs:start_link(watch, Dir),
     fs:subscribe(watch),
     {ok, idle, #data{}}.
@@ -64,21 +64,10 @@ init([Dir]) ->
 handle_event({call, From}, changes, _, _) ->
     Reply = lists:sort(changes1()),
     {keep_state_and_data, [{reply, From, Reply}]};
-handle_event({call, From}, {test, {Type, Path}}, _State, Data) ->
-    Path1 = filename:absname(Path),
-    Result = edt:compile(Path1, [{d, 'TEST'}]),
-    case Result of
-        {ok, {Path1, Module, Warnings}} ->
-            edt_out:stdout("~s", [edt_lib:format(Warnings, warning)], no_nl),
-            edt:ensure_code_path(Path1),
-            edt:test(Type, Module),
-            Reply = ok;
-        {error, {Path1, Errors, Warnings}} ->
-            edt_out:stdout("~s", [edt_lib:format(Errors, error)], no_nl),
-            edt_out:stdout("~s", [edt_lib:format(Warnings, warning)], no_nl),
-            Reply = {error, compilation_failed}
-    end,
-    {next_state, changes, Data, [{reply, From, Reply}]};
+handle_event({call, From}, stats, _, _) ->
+    [Stats] = ets:tab2list(?STATS),
+    Reply = Stats,
+    {keep_state_and_data, [{reply, From, Reply}]};
 handle_event({call, From}, process_changes, idle, _) ->
     Reply = [],
     {keep_state_and_data, [{reply, From, Reply}]};
@@ -94,8 +83,10 @@ handle_event(info, Msg, _State, Data) ->
     AutoProcess = edt:auto_process(),
     case Ignore of
         true ->
+            ets:update_counter(?STATS, stats, {#stats.ignore, 1}),
             logger:notice("Ignoring Path:~p IgnoreRegex: ~p", [Path, edt:ignore_regex()]);
         false ->
+            ets:update_counter(?STATS, stats, {#stats.change, 1}),
             PathType = edt:file_type(Path),
             logger:debug("Path:~p Flags: ~p ~n", [Path, Flags]),
             handle_info_event(PathType, Path, Flags)
@@ -112,16 +103,14 @@ handle_event(info, Msg, _State, Data) ->
 terminate(_Reason, _State, _Data) ->
     void.
 
-code_change(_OldVsn, State, Data, _Extra) ->
-    {ok, State, Data}.
-
 %% -------------------------------------------------------------------
 %% Internal functions
 %% -------------------------------------------------------------------
 handle_info_event(src, Path, Flags) ->
     Modified = lists:member(modified, Flags),
     Removed = lists:member(removed, Flags),
-    case {Modified, Removed} of
+    Deleted = lists:member(deleted, Flags),
+    case {Modified, Removed orelse Deleted} of
         {_, true} ->
             ets:delete(?CHANGES, Path),
             ok;
@@ -136,6 +125,7 @@ handle_info_event(PathType, Path, _Flags) ->
     logger:debug("Don't know how to handle Path: ~p with filetype ", [Path, PathType]).
 
 handle_process_changes_event() ->
+    ets:update_counter(?STATS, stats, {#stats.handle, 1}),
     Changes = changes1(),
     ets:delete_all_objects(?CHANGES),
     Fun = fun_compile(),
@@ -158,7 +148,7 @@ fun_compile() ->
             maybe_do_post_actions(Result)
     end.
 
-%% TODO: define a type for edt:compile() - result
+-spec maybe_do_post_actions(edt:compile_ret()) -> ok.
 maybe_do_post_actions({ok, {Path, _, _}}) ->
     edt_post_action:event({compile, Path});
 maybe_do_post_actions(_) ->

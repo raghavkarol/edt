@@ -1,0 +1,4 @@
+%% -*- erlang -*-
+-module(test_compile_fail).
+
+main() ->
