@@ -16,14 +16,14 @@
          stop/0]).
 
 -export([io_server/0,
-         stdout/0,
          stdout/1,
          stdout/2,
          stdout/3]).
 
 %% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/2,
-         terminate/2, code_change/3, format_status/2]).
+-export([init/1,
+         handle_call/3,
+         handle_cast/2]).
 
 -define(SERVER, ?MODULE).
 
@@ -33,7 +33,6 @@
 %% ---------------------------------------------------------
 %% Gen server control API
 %% ---------------------------------------------------------
-
 start() ->
     gen_server:start({local, ?SERVER}, ?MODULE, [], []).
 
@@ -47,10 +46,12 @@ stop() ->
 %% API
 %% ---------------------------------------------------------
 io_server() ->
-    gen_server:call(?SERVER, io_server).
-
-stdout() ->
-    stdout("").
+    case erlang:whereis(?SERVER) of
+        undefined ->
+            group_leader();
+        _ ->
+            gen_server:call(?SERVER, io_server)
+    end.
 
 stdout(Msg) ->
     stdout(Msg, []).
@@ -73,8 +74,7 @@ stdout(Fmt, Args, _) ->
 init([]) ->
     process_flag(trap_exit, true),
     GL = group_leader(),
-    Ref = erlang:monitor(process, GL),
-    {ok, #state{ref = Ref, io_server = GL}}.
+    {ok, #state{io_server = GL}}.
 
 handle_call(io_server, _From, State) ->
     #state{io_server = Pid} = State,
@@ -82,21 +82,6 @@ handle_call(io_server, _From, State) ->
 
 handle_cast(_Request, State) ->
     {noreply, State}.
-
-handle_info({'DOWN', Ref, process, Pid, _}, State) ->
-    #state{ref = Ref, io_server = Pid} = State,
-    {stop, normal, State};
-handle_info(_Info, State) ->
-    {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
-
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-
-format_status(_Opt, Status) ->
-    Status.
 
 %% ---------------------------------------------------------
 %% Internal functions

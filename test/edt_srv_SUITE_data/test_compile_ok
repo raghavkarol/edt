@@ -1,0 +1,7 @@
+%% -*- erlang -*-
+-module(test_compile_ok).
+
+-export([main/0]).
+
+main() ->
+    ok.

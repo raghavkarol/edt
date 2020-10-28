@@ -6,7 +6,7 @@
 -include_lib("edt_srv.hrl").
 
 suite() ->
-    [{timetrap, {seconds, 5}}].
+    [{timetrap, {seconds, 30}}].
 
 init_per_suite(Config) ->
     Config.
@@ -15,15 +15,12 @@ end_per_suite(_Config) ->
     ok.
 
 init_per_testcase(_TestCase, Config) ->
-    application:set_env(edt, mode, "src"),
-    init_per_testcase1(Config).
-
-init_per_testcase1(Config) ->
-    application:set_env(edt, ignore_regex, <<"ignore">>),
+    {ok, Home} = ct_helper:setup_test_data(Config),
+    application:set_env(edt, ignore_regex, ""),
     application:set_env(edt, auto_process, "false"),
-    Dir = ?config(priv_dir, Config),
-    edt_srv:start(Dir),
-    Config.
+    edt_srv:start(Home),
+    wait(),
+    [{home, Home}|Config].
 
 end_per_testcase(_TestCase, _Config) ->
     edt_srv:stop(),
@@ -31,55 +28,125 @@ end_per_testcase(_TestCase, _Config) ->
 
 all() ->
     [test_ignore_regex,
-     test_src_changes].
+     test_changes,
+     test_changes_auto_process,
+     test_changes_process
+    ].
 
-test_src_changes(Config) ->
-    PrivDir = ?config(priv_dir, Config),
+test_changes(Config) ->
+    Home = ?config(home, Config),
     [] = edt_srv:changes(),
+    Path1 = Home ++ "/src/test_compile_ok.erl",
+    update_file(Path1),
+    edt_lib:retry_until(
+      fun() ->
+              case edt_srv:changes() of
+                  [_] ->
+                      true;
+                  _ ->
+                      false
+              end
+      end),
+    edt_lib:retry_until(
+      fun() ->
+              case edt_srv:changes() of
+                  [_] ->
+                      true;
+                  _ ->
+                      false
+              end
+      end),
+    Path2 = Home ++ "/src/test_compile_fail.erl",
+    update_file(Path2),
+    edt_lib:retry_until(
+      fun() ->
+              case edt_srv:changes() of
+                  [_, _] ->
+                      true;
+                  _ ->
+                      false
+              end
+      end),
+    remove_file(Path2),
+    edt_lib:retry_until(
+      fun() ->
+              case edt_srv:changes() of
+                  [_] ->
+                      true;
+                  _ ->
+                      false
+              end
+      end),
+    ok.
 
-    Path1 = filename:join(PrivDir, "testing_1.erl"),
-    create_file(Path1),
-    edt_lib:retry(fun() -> edt_srv:changes() end,
-          [#change{action=compile, path=Path1, count=1}]),
+test_changes_auto_process(Config) ->
+    Home = ?config(home, Config),
+    application:set_env(edt, auto_process, "true"),
+    edt_lib:retry(fun edt_srv:stats/0,
+                  #stats{change = 0, ignore = 0, handle = 0}),
+    Path = Home ++ "/src/test_compile_ok.erl",
+    update_file(Path),
+    edt_lib:retry_until(
+      fun() ->
+              #stats{handle = H} = edt_srv:stats(),
+              ct:pal("H: ~p", [H]),
+              H > 0
+      end),
+    ok.
 
-    create_file(Path1),
-    edt_lib:retry(fun() -> edt_srv:changes() end,
-          [#change{action=compile, path=Path1, count=2}]),
-
-    Path2 = filename:join(PrivDir, "testing_2.erl"),
-    create_file(Path2),
-    edt_lib:retry(fun() -> edt_srv:changes() end,
-          [#change{action=compile, path=Path1, count=2},
-           #change{action=compile, path=Path2, count=1}]),
-
-    delete_file(Path2),
-    edt_lib:retry(fun() -> edt_srv:changes() end,
-          [#change{action=compile, path=Path1, count=2}]),
-
-    Path3 = filename:join(PrivDir, "testing_1.beam"),
-    create_file(Path3),
-    edt_lib:retry(fun() -> edt_srv:changes() end,
-          [#change{action=compile, path=Path1, count=2}]),
+test_changes_process(Config) ->
+    Home = ?config(home, Config),
+    <<"">> = edt:ignore_regex(),
+    edt_lib:retry(fun edt_srv:stats/0,
+                  #stats{change=0, ignore=0, handle=0}),
+    Path = Home ++ "/src/test_compile_ok.erl",
+    update_file(Path),
+    edt_lib:retry_until(fun() ->
+                                #stats{change=C} = edt_srv:stats(),
+                                C > 0
+                        end),
+    edt_srv:process_changes(),
+    edt_lib:retry_until(
+      fun() ->
+              #stats{handle = H} = edt_srv:stats(),
+              H > 0
+      end),
+    edt_srv:process_changes(),
     ok.
 
 test_ignore_regex(Config) ->
-    PrivDir = ?config(priv_dir, Config),
-
+    Home = ?config(home, Config),
+    application:set_env(edt, ignore_regex, <<"ignore">>),
     <<"ignore">> = edt:ignore_regex(),
-    Path1 = filename:join(PrivDir, "ignore/testing_1.erl"),
-    ok = filelib:ensure_dir(Path1),
-
-    os:cmd("echo \"-module(testing_1).\" >" ++ Path1),
-    [] = edt_srv:changes(),
+    edt_lib:retry(fun edt_srv:stats/0,
+                  #stats{change = 0, ignore = 0, handle = 0}),
+    Path = Home ++ "/src/test_compile_ok_ignore.erl",
+    update_file(Path),
+    edt_lib:retry_until(
+      fun() ->
+              #stats{ignore = I} = edt_srv:stats(),
+              I > 0
+      end),
     ok.
 
-%% @doc using os:cmd because file:write_file doesn't trigger notifications
-create_file(Path) ->
-    filelib:ensure_dir(Path),
-    os:cmd("echo \"-module(testing_1).\" >" ++ Path),
-    os:cmd("echo \"-compile([export_all, nowarn_export_all]).\" >>" ++ Path),
+%% ---------------------------------------------------------
+%% Internal functions
+%% ---------------------------------------------------------
+update_file(Path) ->
+    "" = os:cmd("touch " ++ Path),
     ok.
 
-delete_file(Path) ->
-    os:cmd("rm " ++ Path),
+remove_file(Path) ->
+    "" = os:cmd("rm " ++ Path),
     ok.
+
+%%
+%% Required on linux to allow edt srv to startup and subscribe to
+%% receive events
+%%
+wait() ->
+    receive _ ->
+            ok
+    after 100 ->
+            ok
+    end.

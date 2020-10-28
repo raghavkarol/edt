@@ -1,0 +1,18 @@
+%% -*- erlang -*-
+-module(ct_groups_SUITE).
+
+-compile([export_all, nowarn_export_all]).
+
+-include_lib("common_test/include/ct.hrl").
+
+suite() ->
+    [{timetrap,{seconds,30}}].
+
+all() ->
+    [test_one].
+
+groups() ->
+    [{group1, [], [test_one]}].
+
+test_one(_Config) ->
+    ok.

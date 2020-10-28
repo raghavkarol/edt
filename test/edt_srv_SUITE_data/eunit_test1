@@ -1,0 +1,12 @@
+%% -*- erlang -*-
+
+-module(eunit_test1).
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+-endif.
+
+-compile([export_all, nowarn_export_all]).
+
+test_one() ->
+    ok.
