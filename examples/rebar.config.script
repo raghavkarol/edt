@@ -1,0 +1,13 @@
+%% -*- erlang -*-
+case os:getenv("ENABLE_EDT") of
+    Value when Value == "1";
+               Value == "true" ->
+        Deps = proplists:get_value(deps, CONFIG),
+        %% Override deps by adding edt, note: previous deps section is
+        %% not removed but will not be returned.
+        Deps1 = {deps,
+                 [{edt, {git, "git@github.com:raghavkarol/edt.git", {branch, master}}}|Deps]},
+        CONFIG1 = [Deps1|CONFIG],
+    _ ->
+        CONFIG
+end.
