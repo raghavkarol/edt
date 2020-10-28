@@ -13,7 +13,7 @@ docker-image: ci/Dockerfile
 
 test-ci: docker-image
 	$Q echo "==> Running tests in $(IMAGE)"
-	$Q docker run \
+	$Q docker run --rm \
 	  -w "/$(APP)" \
 	  -v "$(PWD)/src:/$(APP)/src" \
 	  -v "$(PWD)/test:/$(APP)/test" \
