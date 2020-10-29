@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# default http port for flyckeck server
+EDT_HTTP_PORT=65000
+
+#
+# Project specific edt customizations
+#
+[[ -f .edt ]] && source .edt
+
+path=$1
+
+curl -s -H "Content-Type: text/html"  http://localhost:${EDT_HTTP_PORT}/flycheck\?path=$path
