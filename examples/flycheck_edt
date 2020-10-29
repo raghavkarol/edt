@@ -10,4 +10,4 @@ EDT_HTTP_PORT=65000
 
 path=$1
 
-curl -s -H "Content-Type: text/html"  http://localhost:${EDT_HTTP_PORT}/flycheck\?path=$path
+curl -s http://localhost:${EDT_HTTP_PORT}/flycheck\?path=$path

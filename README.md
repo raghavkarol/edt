@@ -20,7 +20,7 @@ brew isntall fswatch
 
 ```
 
-# Using
+# How to use
 
 Add the following line to the `rebar3` profile of your choice
 
@@ -36,7 +36,28 @@ Then start and erlang node like
 
 Now editing and changing a file will automatically reload
 
-# Using as a emacs flycheck backend
+# Post actions
+
+Post actions are executed on successful compile and reload of a
+module. For example to run tests eunit tests in a module do:
+
+```erlang
+ 1> edt_post_action:add(
+    _Name = test_1, _
+    Action = fun() ->
+      edt_api:test(module_with_eunit_tests)
+    end).
+
+ 2> edt_post_action:add(
+     _Name = test_2,
+     _Action = fun() ->
+       edt_api:test(ct_SUITE)
+     end).
+```
+
+There can be multiple post actions are are executed in the `Name` order.
+
+# Emacs flycheck backend
 
 To use as a flymake backend we can extend
 [flycheck-rebar3](https://github.com/joedevivo/flycheck-rebar3)
@@ -62,24 +83,3 @@ available on ELPA with the following configuration.
 ```
 
 See [flycheck_edt](examples/flycheck_edt)
-
-## Post actions on successful compile and reload
-
-Post actions are executed on successful compile and reload of a
-module. For example to run tests eunit tests in a module do:
-
-```erlang
- 1> edt_post_action:add(
-    _Name = test_1, _
-    Action = fun() ->
-      edt_api:test(module_with_eunit_tests)
-    end).
-
- 2> edt_post_action:add(
-     _Name = test_2,
-     _Action = fun() ->
-       edt_api:test(ct_SUITE)
-     end).
-```
-
-There can be multiple post actions are are executed in the `Name` order.
