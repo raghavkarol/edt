@@ -75,7 +75,7 @@ test(ct, Module) ->
 compile_opts(Path) ->
     Includes = [{i, I} || I <- includes()],
     OutDir = [{outdir, outdir(Path)}],
-    [{d, 'TEST'}, return] ++ Includes ++ OutDir.
+    [debug_info, {d, 'TEST'}, return] ++ Includes ++ OutDir.
 
 eunit_opts() ->
     [no_tty, {report, {unite_compact, [profile]}}].
