@@ -55,7 +55,7 @@ test_invalid_parse_profile(_Config) ->
 test_valid_parse_profile(_Config) ->
     Children = supervisor:which_children(edt_sup),
     Ids = lists:sort([Id || {Id, _, _, _} <- Children]),
-    [edt_out, edt_post_action, edt_srv] = Ids,
+    [edt_out, edt_post_action, edt_srv, edt_trace] = Ids,
     ok.
 
 test_http(_Config) ->

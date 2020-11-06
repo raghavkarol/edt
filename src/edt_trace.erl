@@ -51,8 +51,7 @@ init([]) ->
     {ok, #{}}.
 
 handle_call({trace, {M, F}}, _From, State) ->
-    Reply = ok,
-    trace1(M, F),
+    Reply = trace1(M, F),
     {reply, Reply, State};
 handle_call({trace_result, {M, F}}, _From, State) ->
     Fun = fun({M1, F1, _}, _) ->
