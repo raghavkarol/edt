@@ -8,6 +8,7 @@
          stop/0]).
 
 -export([trace/2,
+         trace/3,
          trace_result/2]).
 
 %% gen_server callbacks
@@ -39,7 +40,10 @@ stop() ->
 %% @end
 %%
 trace(M, F) ->
-    gen_server:call(?SERVER, {trace, {M, F}}).
+    gen_server:call(?SERVER, {trace, {M, F, '_'}}).
+
+trace(M, F, ArgsSpec) ->
+    gen_server:call(?SERVER, {trace, {M, F, ArgsSpec}}).
 
 trace_result(M, F) ->
     gen_server:call(?SERVER, {trace_result, {M, F}}).
@@ -50,8 +54,8 @@ trace_result(M, F) ->
 init([]) ->
     {ok, #{}}.
 
-handle_call({trace, {M, F}}, _From, State) ->
-    Reply = trace1(M, F),
+handle_call({trace, {M, F, ArgsSpec}}, _From, State) ->
+    Reply = trace1(M, F, ArgsSpec),
     {reply, Reply, State};
 handle_call({trace_result, {M, F}}, _From, State) ->
     Fun = fun({M1, F1, _}, _) ->
@@ -90,9 +94,9 @@ terminate(_Reason, _State) ->
 %% ---------------------------------------------------------
 %% Internal functions
 %% ---------------------------------------------------------
-trace1(M, F) ->
+trace1(M, F, ArgsSpec) ->
     Fun = fun_capture_args(self()),
-    Spec = {M, F, return_trace},
+    Spec = {M, F, [{ArgsSpec, [], [{return_trace}]}]},
     Opts = [{scope, local},
             {formatter, Fun}],
     recon_trace:calls(Spec, 10, Opts).
