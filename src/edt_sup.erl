@@ -22,7 +22,9 @@ init([]) ->
                   #{id => edt_post_action,
                     start => {edt_post_action, start_link, []}},
                   #{id => edt_out,
-                    start => {edt_out, start_link, []}}],
+                    start => {edt_out, start_link, []}},
+                  #{id => edt_trace,
+                    start => {edt_trace, start_link, []}}],
     {ok, {SupFlags, ChildSpecs}}.
 
 
