@@ -87,6 +87,10 @@ to_boolean(<<"true">>) ->
     true;
 to_boolean(1) ->
     true;
+to_boolean(true) ->
+    true;
+to_boolean("1") ->
+    true;
 to_boolean(_) ->
     false.
 
@@ -194,7 +198,9 @@ to_binary_test() ->
 to_boolean_test() ->
     true = to_boolean("true"),
     true = to_boolean(<<"true">>),
+    true = to_boolean("1"),
     true = to_boolean(1),
+    true = to_boolean(true),
     false = to_boolean(false),
     ok.
 

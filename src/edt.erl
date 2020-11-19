@@ -13,18 +13,20 @@
          get_env/2,
          includes/0]).
 
--export([auto_process/0,
-         http_port/0,
-         home/0,
-         ignore_regex/0,
+-export([
+         ct_groups/2,
          module_name/1,
          outdir/1,
-         relative_path/1,
-         source_path/1,
-         ct_groups/2,
          parse_path/1,
-         rebar3_profile/0]).
+         relative_path/1,
+         source_path/1]).
 
+-export([auto_process/0,
+         enable_http_server/0,
+         home/0,
+         http_port/0,
+         ignore_regex/0,
+         rebar3_profile/0]).
 %% Types
 -type compile_ret() :: {ok, {Path :: path(), module(), list()}}
                      | {error, {Errors ::list(),
@@ -119,6 +121,9 @@ auto_process() ->
 
 http_port() ->
     edt_lib:to_integer(edt:get_env(http_port, "65000")).
+
+enable_http_server() ->
+    edt_lib:to_boolean(edt:get_env(enable_http_server, "0")).
 
 
 %% ---------------------------------------------------------
