@@ -149,6 +149,10 @@ parse_path(Path) ->
                 filename:join(lists:reverse(V))
         end,
     case Tokens of
+        [_ ,"src", "eunit", "test", App|Rest] ->
+            {ok, {test, App, FunPrefix(Rest)}};
+        [_ ,"src", "ct", "test", App|Rest] ->
+            {ok, {test, App, FunPrefix(Rest)}};
         [_, "src", App, "_checkouts"|Rest] ->
             {ok, {{src, checkouts}, App, FunPrefix(Rest)}};
         [_, "test", App, "_checkouts"|Rest] ->

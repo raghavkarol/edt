@@ -110,6 +110,15 @@ test_outdir(_Config) ->
     Path5 = "/Users/name/working/_checkouts/EDT_3/test/testing.erl",
     Expected5 = "_checkouts/EDT_3/test",
     Expected5 = edt:outdir(Path5),
+
+    Path6 = "/Users/name/working/EDT_3/test/eunit/src/Testing.erl",
+    Expected6 = "_build/default/lib/EDT_3/test",
+    Expected6 = edt:outdir(Path6),
+
+    Path7 = "/Users/name/working/EDT_3/test/ct/src/Testing.erl",
+    Expected7 = "_build/default/lib/EDT_3/test",
+    Expected7 = edt:outdir(Path7),
+
     ok.
 
 test_file_type(_Config) ->
