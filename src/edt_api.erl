@@ -1,7 +1,8 @@
 -module(edt_api).
 
 -export([compile/1,
-         test/1]).
+         test/1,
+         test/2]).
 
 %% ---------------------------------------------------------
 %% API
@@ -35,7 +36,18 @@ compile(Path) when is_list(Path);
 %% supported test types are 'eunit' and 'ct'.
 %%
 %% @end
-test(Module) when is_atom(Module) ->
+test(Spec)  ->
+    test(Spec, []),
+    ok.
+
+test(Spec, Opts) ->
+    Path =
+    case Spec of
+        {Module, _} when is_atom(Module) ->
+            edt:source_path(Module);
+        Module when is_atom(Module) ->
+            edt:source_path(Module)
+    end,
     Path = edt:source_path(Module),
     Type = edt_lib:which_test(Path),
     Result = edt:compile(Path),
@@ -45,7 +57,7 @@ test(Module) when is_atom(Module) ->
             edt_out:stdout(Report),
             ok;
         {ok, _} ->
-            edt:test(Type, Module),
+            edt:test(Type, Spec, Opts),
             ok
     end,
     ok.

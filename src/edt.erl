@@ -6,7 +6,7 @@
 -export([compile/1,
          compile/2,
          reload/1,
-         test/2]).
+         test/3]).
 
 -export([file_type/1,
          get_env/1,
@@ -67,12 +67,12 @@ reload(Module) ->
     code:purge(Module),
     code:load_file(Module).
 
-test(eunit, Module) ->
-    eunit(Module);
-test(ct, {Module, TestCase}) ->
-    ct(Module, TestCase);
-test(ct, Module) ->
-    ct(Module).
+test(eunit, Module, Opts) ->
+    eunit(Module, Opts);
+test(ct, {Module, TestCase}, Opts) ->
+    ct(Module, TestCase, Opts);
+test(ct, Module, Opts) ->
+    ct(Module, Opts).
 
 compile_opts(Path) ->
     Includes = [{i, I} || I <- includes()],
@@ -199,24 +199,25 @@ ensure_code_path(Path) ->
     OutDir1 = filename:absname(OutDir),
     code:add_patha(OutDir1).
 
-eunit(Module) ->
-    Opts = eunit_opts(),
-    eunit:test(Module, Opts).
+eunit(Module, Opts) ->
+    Opts1 = eunit_opts() ++ Opts,
+    eunit:test(Module, Opts1).
 
-ct(Module) ->
-    ct(Module, undefined).
+ct(Module, Opts) ->
+    ct(Module, undefined, Opts).
 
-ct(Module, TestCase) ->
+ct(Module, TestCase, Opts) ->
     LogDir = "./_build/test/logs/",
     Dir = filename:dirname(source_path(Module)),
-    Opts = [{auto_compile, false},
+    Opts1 = [{auto_compile, false},
             {dir, Dir},
             {logdir, LogDir}]
         ++ edt:ct_groups(Module, TestCase)
         ++ [{suite, Module} || Module /= undefined ]
         ++ [{testcase, TestCase} || TestCase /= undefined ],
+    Opts2 = Opts1 ++ Opts,
     filelib:ensure_dir(LogDir),
-    ct:run_test(Opts).
+    ct:run_test(Opts2).
 
 ct_groups(Module, Case) ->
     Group =
