@@ -25,13 +25,13 @@ brew isntall fswatch
 Add the following line to the `rebar3` profile of your choice
 
 ```
- {edt, "", {git, "git@github.com:raghavkarol/edt.git", {branch, "master"}}},
+ {edt, "", {git, "https://github.com/raghavkarol/edt.git", {branch, "master"}}}
 ```
 
 Then start and erlang node like
 
 ```
-(REBAR3_PROFILE=<profile> ; rebar3 shell )
+(REBAR3_PROFILE=<profile> ; rebar3 as <profile> shell --apps edt)
 ```
 
 Now editing and changing a file will automatically reload
