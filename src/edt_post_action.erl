@@ -21,11 +21,13 @@
 
 -define(SERVER, ?MODULE).
 
+-type mfargs() :: {module(), fun(), [any()]}.
+
 -record(state, {}).
 -record(action,
         {name :: atom(),
          type = post :: 'post',
-         func :: fun()}).
+         func :: fun() | mfargs()}).
 
 -define(TABLE, edt_post_action).
 
@@ -63,7 +65,12 @@ sync_event(Event) ->
 %% - A function ::: Run the function
 %%   Example:
 %%
-%%    add(fun() -> edt_api:test(my_erl_module) end)
+%%    add(testing_rocks, fun() -> edt_api:test(my_erl_module) end)
+%%
+%% - An MFArsgs tuple ::: use erlang:apply to get the result
+%%   Example:
+%%
+%%    add(testing_is_life, {edt_api, test, [my_erl_module])
 %%
 %% Many post actions are allowed and are uniquely identified by
 %% `Name'. Post actions are run in the order of name, example
@@ -78,7 +85,10 @@ sync_event(Event) ->
 %% @end
 add(Name, Fun) when is_atom(Name),
                     is_function(Fun) ->
-    gen_server:call(?SERVER, {add, {Name, Fun}}).
+    gen_server:call(?SERVER, {add, {Name, Fun}});
+add(Name, {Mod, Fun, Args} = MFArgs) when is_atom(Name),
+                                          is_atom(Mod), is_atom(Fun), is_list(Args) ->
+    gen_server:call(?SERVER, {add, {Name, MFArgs}}).
 
 delete(Name) when is_atom(Name) ->
     gen_server:call(?SERVER, {delete, Name}).
@@ -103,7 +113,7 @@ handle_call({delete, Name}, _From, State) ->
     {reply, Reply, State};
 handle_call(list, _From, State) ->
     Actions = ets:tab2list(?TABLE),
-    Reply = [Name || #action{name = Name} <- Actions],
+    Reply = [{Name, Func} || #action{name = Name, func = Func} <- Actions],
     {reply, Reply, State};
 handle_call({event, Event}, _From, State) ->
     Reply = actions(Event),
@@ -140,7 +150,7 @@ actions(Event) ->
 maybe_do_action(_Event, Action) ->
     #action{name=Name, func=Func} = Action,
     try
-        Result = Func(),
+        Result = eval_func(Func),
         edt_out:stdout("action: ~p done result: ~p", [Name, Result]),
         {ok, {Name, Result}}
     catch
@@ -150,3 +160,8 @@ maybe_do_action(_Event, Action) ->
             edt_out:stdout("ERROR action ~p returned ~p:~p", [Name, C, E]),
             {error, {Name, {C, E}}}
     end.
+
+eval_func(Func) when is_function(Func) ->
+    Func();
+eval_func({M, F, Args}) ->
+    erlang:apply(M, F, Args).
