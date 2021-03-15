@@ -11,7 +11,7 @@ which can be installed like
 ## Mac
 
 ```
-brew isntall fswatch
+brew install fswatch
 ```
 
 ## Linux
