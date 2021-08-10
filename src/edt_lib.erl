@@ -1,3 +1,6 @@
+%%
+%% Copyright 2020 Raghav Karol.
+%%
 -module(edt_lib).
 
 -export([to_atom/1,
@@ -5,9 +8,6 @@
          to_integer/1,
          to_string/1,
          to_boolean/1]).
-
--export([format/2,
-         report/1]).
 
 -export([retry/2,
          retry/3,
@@ -21,45 +21,6 @@
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 -endif.
-
--spec format(Msgs :: [{Path::edt:path(),
-                       [{LineNum::integer(),
-                         module(),
-                         atom() | {atom(), any()}}]}],
-             'error'|'warning') -> binary().
-format(Msgs, Type) ->
-    Type1 =
-        case Type of
-            warning ->
-                "Warning";
-            error ->
-                "Error"
-        end,
-    Result = [ [Path, ":", edt_lib:to_string(LineNo), ":", " ", Type1, ": ", Mod:format_error(Msg)] ||
-                 {Path, W1} <- Msgs,
-                 {LineNo, Mod, Msg} <- W1 ],
-    Result1 = string:join(Result, "\n"),
-    iolist_to_binary([Result1, "\n"]).
-
--spec report(edt:compile_ret()) -> iolist().
-report({ok, {Path, _Module, Warnings}}) ->
-    ["compiled ", Path,
-     if Warnings /= []->
-             [$\n, edt_lib:format(Warnings, warning)];
-        true ->
-             []
-     end];
-report({error, {Path, Errors, Warnings}}) ->
-    ["ERROR ", Path, " ", $\n,
-     edt_lib:format(Errors, error),
-     $\n,
-     if Warnings /= []->
-             ["Warnings", $\n, edt_lib:format(Warnings, warning)];
-        true ->
-             []
-     end];
-report({error, {Path, unknown}})  ->
-    ["ignored ", Path, " do not know how to handle it"].
 
 to_atom(V)
   when is_binary(V) ->
@@ -80,7 +41,11 @@ to_binary(V)
   when is_binary(V) ->
     V;
 to_binary(V) when is_list(V) ->
-    list_to_binary(V).
+    list_to_binary(V);
+to_binary(V) when is_integer(V) ->
+    integer_to_binary(V);
+to_binary(V) when is_atom(V) ->
+    atom_to_binary(V, 'utf8').
 
 to_boolean("true") ->
     true;
@@ -164,7 +129,6 @@ parse_rebar3_profile(Cmd) ->
 %% Unit tests
 %% ---------------------------------------------------------
 -ifdef(TEST).
-
 retry_test_() ->
     [fun() ->
              1 = retry(fun() -> 1 end, 1)
@@ -180,8 +144,7 @@ retry_test_() ->
      end,
      fun() ->
              {'EXIT', {{retry_timeout,{expected,true,actual,false}}, _}} = (catch retry_until(fun() -> false end, 1))
-     end
-    ].
+     end].
 
 which_test_test() ->
     eunit = which_test("checkouts/src/edt.erl"),
@@ -223,80 +186,6 @@ to_string_test() ->
     "1" = to_string(1),
     "1" = to_string('1'),
     "one" = to_string("one"),
-    ok.
-
-format_warnings_test() ->
-    Msgs = [{"_checkouts/edt/src/edt.erl",
-             [{36,erl_lint,{unused_var,'Errors'}},
-              {36,erl_lint,{unused_var,'Warnings'}},
-              {194,sys_core_fold,no_clause_match},
-              {194,sys_core_fold,nomatch_guard}]}],
-    Expected =  <<"_checkouts/edt/src/edt.erl:36: Warning: variable 'Errors' is unused", "\n",
-                  "_checkouts/edt/src/edt.erl:36: Warning: variable 'Warnings' is unused", "\n",
-                  "_checkouts/edt/src/edt.erl:194: Warning: no clause will ever match", "\n",
-                  "_checkouts/edt/src/edt.erl:194: Warning: the guard for this clause evaluates to 'false'", "\n">>,
-    Actual = format(Msgs, warning),
-    Expected = Actual,
-    ok.
-
-format_errors_test() ->
-    Msgs = [{"_checkouts/edt/src/edt.erl",
-             [{36,erl_lint,{unused_var,'Errors'}},
-              {36,erl_lint,{unused_var,'Warnings'}},
-              {194,sys_core_fold,no_clause_match},
-              {194,sys_core_fold,nomatch_guard}]}],
-    Expected =  <<"_checkouts/edt/src/edt.erl:36: Error: variable 'Errors' is unused", "\n",
-                  "_checkouts/edt/src/edt.erl:36: Error: variable 'Warnings' is unused", "\n",
-                  "_checkouts/edt/src/edt.erl:194: Error: no clause will ever match", "\n",
-                  "_checkouts/edt/src/edt.erl:194: Error: the guard for this clause evaluates to 'false'", "\n">>,
-    Actual = format(Msgs, error),
-    Expected = Actual,
-    ok.
-
-report_test() ->
-    Msgs = [{"testing.erl",
-             [{36,erl_lint,{unused_var,'Errors'}},
-              {36,erl_lint,{unused_var,'Warnings'}},
-              {194,sys_core_fold,no_clause_match},
-              {194,sys_core_fold,nomatch_guard}]}],
-    Expected1 = ["compiled ","testing.erl",
-                [$\n,
-                 <<"testing.erl:36: Warning: variable 'Errors' is unused", "\n",
-                   "testing.erl:36: Warning: variable 'Warnings' is unused", "\n",
-                   "testing.erl:194: Warning: no clause will ever match", "\n",
-                   "testing.erl:194: Warning: the guard for this clause evaluates to 'false'", "\n">>]],
-    Resp1 = {"testing.erl", testing, Msgs},
-    Actual1 = report({ok, Resp1}),
-    Actual1 = Expected1,
-
-    Resp2 = {"testing.erl", testing, []},
-    Actual2 = report({ok, Resp2}),
-    Expected2 = ["compiled ","testing.erl",[]],
-    Actual2 = Expected2,
-
-    Actual3 = report({error, {"testing1", Msgs, []}}),
-    Expected3 = ["ERROR ","testing1"," ",$\n,
-                 <<"testing.erl:36: Error: variable 'Errors' is unused", "\n",
-                   "testing.erl:36: Error: variable 'Warnings' is unused", "\n",
-                   "testing.erl:194: Error: no clause will ever match" "\n",
-                   "testing.erl:194: Error: the guard for this clause evaluates to 'false'", "\n">>,
-                 $\n,
-                 []],
-    Expected3 = Actual3,
-
-    Actual4 = report({error, {"testing1", [], Msgs}}),
-    Expected4 = ["ERROR ","testing1"," ", $\n,
-                 <<"\n">>, $\n,
-                 ["Warnings",$\n,
-                  <<"testing.erl:36: Warning: variable 'Errors' is unused", "\n",
-                    "testing.erl:36: Warning: variable 'Warnings' is unused", "\n",
-                    "testing.erl:194: Warning: no clause will ever match", "\n",
-                    "testing.erl:194: Warning: the guard for this clause evaluates to 'false'", "\n">>]],
-    Actual4 = Expected4,
-
-    Actual5 = report({error, {"testing1.erl", unknown}}),
-    Expected5 = ["ignored ", "testing1.erl", " do not know how to handle it"],
-    Actual5 = Expected5,
     ok.
 
 parse_rebar3_profile_test() ->

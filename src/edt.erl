@@ -1,6 +1,8 @@
 %%
 %% API for Erlang Development Tools (edt)
 %%
+%% Copyright 2020 Raghav Karol.
+%%
 -module(edt).
 
 -export([compile/1,
@@ -28,9 +30,14 @@
          ignore_regex/0,
          rebar3_profile/0]).
 %% Types
+-type compile_msgs() :: [{Path :: edt:path(),
+                          [{LineNum :: integer(), module(), atom()
+                            | {atom(), any()}}]}].
+
 -type compile_ret() :: {ok, {Path :: path(), module(), list()}}
-                     | {error, {Errors ::list(),
-                                Warnings :: list()}}.
+                     | {error, {Errors :: compile_msgs(),
+                                Warnings :: compile_msgs()}}.
+
 
 -type path() :: string() | binary().
 

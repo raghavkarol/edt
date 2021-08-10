@@ -214,7 +214,10 @@ test_eunit(Config) ->
     Home = ?config(home, Config),
     {ok, _} = edt:compile(Home ++ "test/eunit_test1.erl"),
     ok = edt:test(eunit, eunit_test1, undefined, []),
+    ok = edt:test(eunit, eunit_test1, test_one, []),
+    ok = edt:test(eunit, eunit_test1, test_generator_one_, []),
     ok.
+
 
 test_ct(Config) ->
     Home = ?config(home, Config),

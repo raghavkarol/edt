@@ -3,7 +3,9 @@
  {<<"cowboy">>,{pkg,<<"cowboy">>,<<"2.8.0">>},0},
  {<<"cowlib">>,{pkg,<<"cowlib">>,<<"2.9.1">>},1},
  {<<"fs">>,{pkg,<<"fs">>,<<"6.9.0">>},0},
+ {<<"jiffy">>,{pkg,<<"jiffy">>,<<"1.0.8">>},0},
  {<<"ranch">>,{pkg,<<"ranch">>,<<"1.7.1">>},1},
+ {<<"recon">>,{pkg,<<"recon">>,<<"2.5.2">>},0},
  {<<"tdiff">>,{pkg,<<"tdiff">>,<<"0.1.2">>},1},
  {<<"unite">>,{pkg,<<"unite">>,<<"0.3.1">>},0}]}.
 [
@@ -12,7 +14,9 @@
  {<<"cowboy">>, <<"F3DC62E35797ECD9AC1B50DB74611193C29815401E53BAC9A5C0577BD7BC667D">>},
  {<<"cowlib">>, <<"61A6C7C50CF07FDD24B2F45B89500BB93B6686579B069A89F88CB211E1125C78">>},
  {<<"fs">>, <<"38604C96BB9210D23098A8D01359053C6DA08712BD3C01F4733C637995E2B7C8">>},
+ {<<"jiffy">>, <<"60E36F00BE35E5AC6E6CF2D4CAF3BDF3103D4460AFF385F543A8D7DF2D6D9613">>},
  {<<"ranch">>, <<"6B1FAB51B49196860B733A49C07604465A47BDB78AA10C1C16A3D199F7F8C881">>},
+ {<<"recon">>, <<"CBA53FA8DB83AD968C9A652E09C3ED7DDCC4DA434F27C3EAA9CA47FFB2B1FF03">>},
  {<<"tdiff">>, <<"4E1B30321F1B3D600DF65CD60858EDE1235FE4E5EE042110AB5AD90CD6464AC5">>},
  {<<"unite">>, <<"6B2E73A2E8DEBFF848A65B8DBE19509A6C4D60B40D1CDF686CEA365C0F247355">>}]}
 ].

@@ -21,22 +21,34 @@ end_per_testcase(_TestCase, _Config) ->
     ok.
 
 all() ->
-    [test_compile,
+    [test_compile_ok,
+     test_compile_fail,
      test_ct,
-     test_eunit].
+     test_eunit_ok,
+     test_eunit_error].
 
-test_compile(Config) ->
+test_compile_ok(Config) ->
     Home = ?config(home, Config),
     ok = edt_api:compile(Home ++ "/src/test_compile_ok.erl"),
     ok = edt_api:compile(test_compile_ok),
     ok.
+
+test_compile_fail(Config) ->
+    Home = ?config(home, Config),
+    {error, _} = edt_api:compile(Home ++ "/src/test_compile_faile.erl").
 
 test_ct(Config) ->
     Home = ?config(home, Config),
     ok = edt_api:compile(Home ++ "/test/ct_SUITE.erl"),
     edt_api:test(ct_SUITE).
 
-test_eunit(Config) ->
+test_eunit_ok(Config) ->
     Home = ?config(home, Config),
     ok = edt_api:compile(Home ++ "/test/eunit_test1.erl"),
-    edt_api:test(eunit_test).
+    ok = edt_api:test(eunit_test1),
+    ok = edt_api:test(eunit_test1, test_one).
+
+test_eunit_error(Config) ->
+    Home = ?config(home, Config),
+    ok = edt_api:compile(Home ++ "/test/eunit_test1.erl"),
+    {error, _} = edt_api:test(eunit_test).

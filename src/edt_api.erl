@@ -1,3 +1,6 @@
+%%
+%% Copyright 2020 Raghav Karol.
+%%
 -module(edt_api).
 
 -export([compile/1,
@@ -20,7 +23,7 @@ compile(Path) when is_list(Path);
     Result = edt:compile(Path),
     case Result of
         {ok, _} ->
-            Report = edt_lib:report(Result),
+            Report = edt_compile_result:format(Result, text),
             edt_out:stdout(Report),
             ok;
         {error, _} = E ->
@@ -47,7 +50,7 @@ test(Module, TestCase, Opts) ->
         {ok, _} ->
             edt:test(Type, Module, TestCase, Opts);
         {error, _}=E ->
-            Report = edt_lib:report(Result),
+            Report = edt_compile_result:format(Result, text),
             edt_out:stdout(Report),
             E
     end.

@@ -1,3 +1,6 @@
+%%
+%% Copyright 2020 Raghav Karol.
+%%
 -module(edt_post_action).
 
 -behaviour(gen_server).
@@ -156,10 +159,20 @@ maybe_do_action(_Event, Action) ->
     catch
         throw:stop:_ ->
             {ok, {stop, Name}};
-        C:E:_S ->
+        C:E:St ->
+            persistent_term:put(st, St),
             edt_out:stdout("ERROR action ~p returned ~p:~p", [Name, C, E]),
+            edt_out:stdout("Stacktrace:~n~s", [format(St)]),
             {error, {Name, {C, E}}}
     end.
+
+format(Stacktrace) ->
+    Stacktrace1 = [ ([Path, ":", edt_lib:to_binary(LineNum), ":", " ",
+                      edt_lib:to_binary(M), ":", edt_lib:to_binary(F), "/", edt_lib:to_binary(Arity)])
+                    || {M, F, Arity, [{file, Path}, {line, LineNum}]} <- Stacktrace],
+    Stacktrace2 = string:join(Stacktrace1, "\n"),
+    iolist_to_binary(Stacktrace2).
+
 
 eval_func(Func) when is_function(Func) ->
     Func();
