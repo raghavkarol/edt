@@ -89,7 +89,6 @@ test_changes_auto_process(Config) ->
     edt_lib:retry_until(
       fun() ->
               #stats{handle = H} = edt_srv:stats(),
-              ct:pal("H: ~p", [H]),
               H > 0
       end),
     ok.

@@ -1,8 +1,7 @@
 -module(edt_api).
 
 -export([compile/1,
-         test/1]).
-
+         test/1, test/2, test/3]).
 %% ---------------------------------------------------------
 %% API
 %% ---------------------------------------------------------
@@ -28,24 +27,33 @@ compile(Path) when is_list(Path);
             E
     end.
 
-%% @doc
+
 %%
-%% Discover and the run the tests in Module.
+%% @doc Discover and the run the tests in Module. If TestCase is not
+%% undefined, run only that test case. Supports discovery of eunit and
+%% ct test types.
 %%
-%% supported test types are 'eunit' and 'ct'.
+%% Module is the module containing tests .e.g. edt_lib or edt_SUITE
+%% TestCase is a test case function
 %%
-%% @end
-test(Module) when is_atom(Module) ->
+%%  eunit :: https://erlang.org/doc/man/eunit.html#test-2
+%%  ct    :: https://erlang.org/doc/man/ct.html#run_test-1
+%%
+test(Module, TestCase, Opts) ->
     Path = edt:source_path(Module),
     Type = edt_lib:which_test(Path),
     Result = edt:compile(Path),
     case Result of
-        {error, _} ->
+        {ok, _} ->
+            edt:test(Type, Module, TestCase, Opts);
+        {error, _}=E ->
             Report = edt_lib:report(Result),
             edt_out:stdout(Report),
-            ok;
-        {ok, _} ->
-            edt:test(Type, Module),
-            ok
-    end,
-    ok.
+            E
+    end.
+
+test(Module, TestCase) ->
+    test(Module, TestCase, []).
+
+test(Module)  ->
+    test(Module, undefined, []).

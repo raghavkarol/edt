@@ -213,20 +213,20 @@ test_compile(Config) ->
 test_eunit(Config) ->
     Home = ?config(home, Config),
     {ok, _} = edt:compile(Home ++ "test/eunit_test1.erl"),
-    ok = edt:test(eunit, eunit_test1),
+    ok = edt:test(eunit, eunit_test1, undefined, []),
     ok.
 
 test_ct(Config) ->
     Home = ?config(home, Config),
     {ok, _} = edt:compile(Home ++ "test/ct_SUITE.erl"),
-    {error, _} = edt:test(ct, ct_SUITE),
+    {error, _} = edt:test(ct, ct_SUITE, undefined, []),
 
     {ok, _} = edt:compile(Home ++ "test/ct_groups_empty_SUITE.erl"),
-    {error, _} = edt:test(ct, ct_groups_empty_SUITE),
+    {error, _} = edt:test(ct, ct_groups_empty_SUITE, undefined, []),
 
     {ok, _} = edt:compile(Home ++ "test/ct_groups_SUITE.erl"),
-    {error, _} = edt:test(ct, ct_groups_SUITE),
+    {error, _} = edt:test(ct, ct_groups_SUITE, undefined, []),
 
     {ok, _} = edt:compile(Home ++ "test/ct_groups_SUITE.erl"),
-    {error, _} = edt:test(ct, {ct_groups_SUITE, test_one}),
+    {error, _} = edt:test(ct, ct_groups_SUITE, test_one, []),
     ok.

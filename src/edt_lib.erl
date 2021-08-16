@@ -15,6 +15,7 @@
          retry_until/2]).
 
 -export([parse_rebar3_profile/1,
+         is_eunit_generator/1,
          which_test/1]).
 
 -ifdef(TEST).
@@ -145,6 +146,10 @@ which_test(Path) ->
             eunit
     end.
 
+-spec is_eunit_generator(function()) -> boolean().
+is_eunit_generator(Func) ->
+    string:find(atom_to_list(Func), "_", trailing) == "_".
+
 parse_rebar3_profile(Cmd) ->
     case re:run(Cmd, "rebar3\s+shell|as\s+(.+?)\s+shell", [{capture, all, list}]) of
         {match, [_, Profile]} ->
@@ -182,6 +187,10 @@ which_test_test() ->
     eunit = which_test("checkouts/src/edt.erl"),
     ct = which_test("checkouts/test/edt_SUITE.erl"),
     ok.
+
+is_eunit_generator_test() ->
+    true = is_eunit_generator(a_generator_),
+    false = is_eunit_generator(a_simple_test).
 
 to_atom_test() ->
     '1' = to_atom(1),

@@ -34,11 +34,9 @@ test_compile(Config) ->
 test_ct(Config) ->
     Home = ?config(home, Config),
     ok = edt_api:compile(Home ++ "/test/ct_SUITE.erl"),
-    ok = edt_api:test(ct_SUITE),
-    ok.
+    edt_api:test(ct_SUITE).
 
 test_eunit(Config) ->
     Home = ?config(home, Config),
     ok = edt_api:compile(Home ++ "/test/eunit_test1.erl"),
-    ok = edt_api:test(eunit_test),
-    ok.
+    edt_api:test(eunit_test).
