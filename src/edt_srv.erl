@@ -1,5 +1,5 @@
 %%
-%%
+%% Copyright 2020 Raghav Karol.
 %%
 -module(edt_srv).
 
@@ -143,7 +143,7 @@ changes1() ->
 fun_compile() ->
     fun(#change{action=compile, path = Path}) ->
             Result = edt:compile(Path, []),
-            Report = edt_lib:report(Result),
+            Report = edt_compile_result:format(Result, text),
             edt_out:stdout("~s", [Report]),
             maybe_do_post_actions(Result)
     end.

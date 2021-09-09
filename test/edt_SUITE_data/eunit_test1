@@ -10,3 +10,7 @@
 
 test_one() ->
     ok.
+
+test_generator_one_() ->
+    [{"test generator",
+      fun() -> ok end}].

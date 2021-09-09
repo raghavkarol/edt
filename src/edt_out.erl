@@ -6,6 +6,9 @@
 %% distel, we want to send all output from edt to the node where edt
 %% is running and not the remote node.
 %%
+%%
+%% Copyright 2020 Raghav Karol.
+%%
 -module(edt_out).
 
 -behaviour(gen_server).
@@ -60,13 +63,11 @@ stdout(Fmt, Args) ->
     stdout(Fmt, Args, nl).
 
 stdout(Fmt, Args, no_nl) ->
-    IO = io_server(),
-    io:format(IO, "==> ~s ", [datetime()]),
-    io:format(IO, Fmt, Args);
-stdout(Fmt, Args, _) ->
-    IO = io_server(),
-    io:format(IO, "==> ~s ", [datetime()]),
-    io:format(IO, Fmt ++ "~n", Args).
+    io:format(io_server(), "==> ~s ", [datetime()]),
+    io:format(io_server(), Fmt, Args);
+stdout(Fmt, Args, nl) ->
+    stdout(Fmt, Args, no_nl),
+    io:format(io_server(), "~n", []).
 
 %% ---------------------------------------------------------
 %% Gen server callbacks

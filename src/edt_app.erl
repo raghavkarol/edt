@@ -1,8 +1,6 @@
-%%%-------------------------------------------------------------------
-%% @doc edt public API
-%% @end
-%%%-------------------------------------------------------------------
-
+%%
+%% Copyright 2020 Raghav Karol.
+%%
 -module(edt_app).
 
 -behaviour(application).
@@ -32,10 +30,9 @@ start(_StartType, _StartArgs) ->
 stop(_State) ->
     ok.
 
-init_cowboy(Enable)
-  when Enable == true ->
+init_cowboy(true) ->
     Dispatch = cowboy_router:compile(
-                 [{'_', [{"/compile", edt_http, #{}}]}]),
+                 [{'_', [{'_', edt_http, #{}}]}]),
     Port = edt:http_port(),
     {ok, _} = cowboy:start_clear(
                 edt_http_listener,
