@@ -73,6 +73,8 @@ to_boolean(_) ->
 
 to_integer(V) when is_list(V) ->
     list_to_integer(V);
+to_integer(V) when is_binary(V) ->
+    binary_to_integer(V);
 to_integer(V) when is_integer(V) ->
     V.
 

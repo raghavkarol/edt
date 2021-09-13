@@ -10,17 +10,22 @@
 
 -export([
     summary/0, summary/1,
-    call_graph/0, call_graph/1
+    summary1/1,
+    call_graph/0, call_graph/1,
+    call_graph1/1
 ]).
 
 %% ---------------------------------------------------------
 %% Internal functions
 %% ---------------------------------------------------------
+mfa_width() ->
+    -60.
 indent(I) ->
     string:join(lists:duplicate(I bsl 1, " "), "").
 
-to_string1({mfa, {M, F, A}}) ->
-    io_lib:format("~p:~p/~p", [M, F, A]);
+to_string1({mfa, {Indent, M, F, A}}) ->
+    Padding = indent(Indent),
+    io_lib:format("~s~p:~p/~p", [Padding, M, F, A]);
 to_string1(Term) when is_list(Term) ->
     io_lib:format("~s", [Term]);
 to_string1(Term) ->
@@ -51,6 +56,7 @@ to_proplist(#crec{} = CRec) ->
         end_reds = ER
     } = CRec,
     [
+        {seq_num, SeqNo},
         {id, Id},
         {pid, Pid},
         {time,
@@ -63,8 +69,7 @@ to_proplist(#crec{} = CRec) ->
                 0 -> "-";
                 _ -> ER - SR
             end},
-        {return, Return},
-        {seq_num, SeqNo}
+        {return, Return}
     ];
 to_proplist(#srec{} = SRec) ->
     #srec{
@@ -98,12 +103,12 @@ header(Fields, #srec{}) ->
     end;
 header(Fields, #crec{}) ->
     Spec = [
+        {seq_num, {10, "seq_num"}},
         {id, {10, "id"}},
         {pid, {15, "pid"}},
         {time, {10, "time"}},
         {reductions, {15, "reductions"}},
-        {return, {10, "return"}},
-        {seq_num, {10, "seq_num"}}
+        {return, {10, "return"}}
     ],
     case Fields of
         all ->
@@ -131,8 +136,11 @@ to_iodata(Fields, Header, #srec{} = SRec) ->
     } = SRec,
     Values = select(Fields, SRec),
     Widths = [W || {W, _} <- Header],
-    lists:zip(Widths, Values) ++
-        [{-40, {mfa, {M, F, Arity}}}];
+    Indent = 0,
+    [
+        {mfa_width(), {mfa, {Indent, M, F, Arity}}}
+        | lists:zip(Widths, Values)
+    ];
 to_iodata(Fields, Header, {#crec{} = CRec, Indent}) ->
     #crec{
         module = M,
@@ -141,45 +149,66 @@ to_iodata(Fields, Header, {#crec{} = CRec, Indent}) ->
     } = CRec,
     Values = select(Fields, CRec),
     Widths = [W || {W, _} <- Header],
-    lists:zip(Widths, Values) ++
-        [
-            indent(Indent),
-            {-40, {mfa, {M, F, Arity}}}
-        ].
+    [
+        {mfa_width(), {mfa, {Indent, M, F, Arity}}}
+        | lists:zip(Widths, Values)
+    ].
 
-call_graph(Fields, CallerId, Indent) ->
+call_graph1(Fields, CallerId, Indent) ->
     CRecs = edt_profile_store:find_crecs(CallerId),
     Header = header(Fields, #crec{}),
     [
         begin
             Call = iolist_to_binary([line(to_iodata(Fields, Header, {CRec, Indent})), "\n"]),
-            io:format("~s", [Call]),
-            call_graph(Fields, CRec#crec.id, Indent + 1)
+            lists:flatten([
+                io_lib:format("~s", [Call]),
+                call_graph1(Fields, CRec#crec.id, Indent + 1)
+            ])
         end
      || CRec <- CRecs
-    ],
-    ok.
+    ].
+
+%% @doc call_graph
+call_graph1(Fields) ->
+    Header = header(Fields, #crec{}),
+    [
+        lists:flatten(
+            io_lib:format(
+                "~s ~s ~n~n",
+                [to_string({mfa_width(), "MFA"}), line(Header)]
+            )
+        ),
+        call_graph1(Fields, 0, 0)
+    ].
+
+%% @doc summary
+summary1(Fields) ->
+    SRecs = edt_profile_store:find_srecs(),
+    Header = header(Fields, #srec{}),
+    Summary1 = [[line(to_iodata(Fields, Header, SRec)), "\n"] || SRec <- SRecs],
+    Summary2 = iolist_to_binary(Summary1),
+    io_lib:format(
+        "~s ~s ~n~n~s",
+        [
+            to_string({mfa_width(), "MFA"}),
+            line(Header),
+            Summary2
+        ]
+    ).
 
 %% ---------------------------------------------------------
 %% API
 %% ---------------------------------------------------------
-
-%% @doc call_graph
 call_graph(Fields) ->
-    Header = header(Fields, #crec{}),
-    io:format("~s ~s ~n~n", [line(Header), "MFA"]),
-    call_graph(Fields, 0, 0).
+    CG = call_graph1(Fields),
+    io:format("~s", [CG]).
 
 call_graph() ->
     call_graph(all).
 
-%% @doc summary
 summary(Fields) ->
-    SRecs = edt_profile_store:find_srecs(),
-    Header = header(Fields, #srec{}),
-    Summary = [[line(to_iodata(Fields, Header, SRec)), "\n"] || SRec <- SRecs],
-    Summary1 = iolist_to_binary(Summary),
-    io:format("~s ~s ~n~n~s", [line(Header), to_string({-40, "MFA"}), Summary1]).
+    S = summary1(Fields),
+    io:format("~s", [S]).
 
 summary() ->
     summary(all).
