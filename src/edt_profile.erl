@@ -75,6 +75,8 @@ trace(M, F, FOpts, ArgSpec) ->
     trace(Specs).
 
 %% link @{trace_opt/2}
+trace(M) when is_atom(M) ->
+    trace(M, '_');
 trace(Specs) when is_list(Specs) ->
     TOpts = default_trace_opts(),
     trace_opts(Specs, TOpts).
@@ -160,8 +162,16 @@ terminate(_Reason, _State) ->
 %% Internal functions
 %% ---------------------------------------------------------
 default_trace_opts() ->
-    #{track_calls => false,                     % TODO rename to something else
-      max_calls => 100}.
+    Track = edt:get_env(profile_track_calls, false),
+    Max = edt:get_env(profile_max_calls, false),
+    #{track_calls => Track,
+      max_calls => Max}.
+
+default_trace_fopts() ->
+    Capture = edt:get_env(profile_capture, false),
+    StartContext = edt:get_env(profile_start_context, false),
+    #{capture => Capture,
+      start_context => StartContext}.
 
 new_state() ->
     #state{context_stack = #{},
@@ -313,9 +323,11 @@ maybe_stop_context(Pid, M, F, State) ->
     {ContextId, State1}.
 
 to_trace_spec({M, F}) ->
-    to_trace_spec({M, F, #{}, '_'});
-to_trace_spec({M, F, Opts}) ->
-    to_trace_spec({M, F, Opts, '_'});
+    FOpts = default_trace_fopts(),
+    to_trace_spec({M, F, FOpts, '_'});
+to_trace_spec({M, F, FOpts}) ->
+    FOpts1 = maps:merge(default_trace_fopts(), FOpts),
+    to_trace_spec({M, F, FOpts1, '_'});
 to_trace_spec({_, _, _, _}=Spec) ->
     Spec.
 
