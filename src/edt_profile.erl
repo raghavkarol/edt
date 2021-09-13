@@ -353,17 +353,22 @@ maybe_capture_result(#{capture_result := true}, Result) ->
 maybe_capture_result(_, _) ->
     '$not_captured'.
 
+fopts(M, F, Opts) ->
+    Default = default_trace_fopts(),
+    Map1 = maps:get({M, '_'}, Opts, Default),
+    maps:get({M, F}, Opts, Map1).
+
 fun_capture_args(Opts, Caller) ->
     fun({trace, Pid, call, {M, F, Args}}) ->
             Reductions = reductions(Pid),
-            FOpts = maps:get({M,F}, Opts, #{}),
+            FOpts = fopts(M, F, Opts),
             Arity = length(Args),
             Args1 = maybe_capture_args(FOpts, Args),
             Caller ! {call, {Pid, M, F, Args1, Arity, timestamp(), Reductions}},
             "";
        ({trace, Pid, return_from, {M, F, Arity}, Result}) ->
             Reductions = reductions(Pid),
-            FOpts = maps:get({M,F}, Opts, #{}),
+            FOpts = fopts(M, F, Opts),
             Result1 = maybe_capture_result(FOpts, Result),
             Caller ! {return_from, {Pid, M, F, Arity, Result1, timestamp(), Reductions}},
             ""
