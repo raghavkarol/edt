@@ -70,6 +70,13 @@ stop() ->
 %% ---------------------------------------------------------
 %% API
 %% ---------------------------------------------------------
+%% link @{trace_opt/2}
+trace(M) when is_atom(M) ->
+    trace(M, '_');
+trace(Specs) when is_list(Specs) ->
+    TOpts = default_trace_opts(),
+    trace_opts(Specs, TOpts).
+
 trace(M, F) ->
     Specs = [to_trace_spec({M, F})],
     trace(Specs).
@@ -83,17 +90,10 @@ trace(M, F, FOpts, ArgSpec) ->
     Specs = [to_trace_spec({M, F, FOpts, ArgSpec})],
     trace(Specs).
 
-%% link @{trace_opt/2}
-trace(M) when is_atom(M) ->
-    trace(M, '_');
-trace(Specs) when is_list(Specs) ->
-    TOpts = default_trace_opts(),
-    trace_opts(Specs, TOpts).
-
 %%
 %% Specs is a list of
 %%
-%% [{Module, Func}|{Module, Func, FOpts}|{Module, Func, FOpts, ArgSpec}]
+%% [Module|{Module, Func}|{Module, Func, FOpts}|{Module, Func, FOpts, ArgSpec}]
 %%
 %% Opts is map with the following keys
 %%
@@ -353,6 +353,8 @@ maybe_stop_context(Pid, M, F, State) ->
         end,
     {ContextId, State1}.
 
+to_trace_spec(M) when is_atom(M) ->
+    to_trace_spec({M, '_'});
 to_trace_spec({M, F}) ->
     FOpts = default_trace_fopts(),
     to_trace_spec({M, F, FOpts, '_'});
