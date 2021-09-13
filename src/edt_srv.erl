@@ -6,13 +6,17 @@
 -behaviour(gen_statem).
 
 %% API
--export([start/1,
-         start_link/1,
-         stop/0]).
+-export([
+    start/1,
+    start_link/1,
+    stop/0
+]).
 
--export([changes/0,
-         process_changes/0,
-         stats/0]).
+-export([
+    changes/0,
+    process_changes/0,
+    stats/0
+]).
 
 %% gen_statem callbacks
 -export([callback_mode/0, init/1, terminate/3]).
@@ -115,7 +119,7 @@ handle_info_event(src, Path, Flags) ->
             ets:delete(?CHANGES, Path),
             ok;
         {true, false} ->
-            ets:insert_new(?CHANGES, #change{path=Path, action=compile}),
+            ets:insert_new(?CHANGES, #change{path = Path, action = compile}),
             ets:update_counter(?CHANGES, Path, {#change.count, 1}),
             ok;
         _ ->
@@ -141,11 +145,11 @@ changes1() ->
     ets:tab2list(?CHANGES).
 
 fun_compile() ->
-    fun(#change{action=compile, path = Path}) ->
-            Result = edt:compile(Path, []),
-            Report = edt_compile_result:format(Result, text),
-            edt_out:stdout("~s", [Report]),
-            maybe_do_post_actions(Result)
+    fun(#change{action = compile, path = Path}) ->
+        Result = edt:compile(Path, []),
+        Report = edt_compile_result:format(Result, text),
+        edt_out:stdout("~s", [Report]),
+        maybe_do_post_actions(Result)
     end.
 
 -spec maybe_do_post_actions(edt:compile_ret()) -> ok.

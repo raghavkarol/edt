@@ -6,31 +6,40 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0,
-         start/0,
-         stop/0]).
+-export([
+    start_link/0,
+    start/0,
+    stop/0
+]).
 
--export([add/2,
-         delete/1,
-         list/0]).
+-export([
+    add/2,
+    delete/1,
+    list/0
+]).
 
--export([event/1,
-         sync_event/1]).
+-export([
+    event/1,
+    sync_event/1
+]).
 
 %% gen_server callbacks
--export([init/1,
-         handle_call/3,
-         handle_cast/2]).
+-export([
+    init/1,
+    handle_call/3,
+    handle_cast/2
+]).
 
 -define(SERVER, ?MODULE).
 
 -type mfargs() :: {module(), fun(), [any()]}.
 
 -record(state, {}).
--record(action,
-        {name :: atom(),
-         type = post :: 'post',
-         func :: fun() | mfargs()}).
+-record(action, {
+    name :: atom(),
+    type = post :: 'post',
+    func :: fun() | mfargs()
+}).
 
 -define(TABLE, edt_post_action).
 
@@ -86,11 +95,17 @@ sync_event(Event) ->
 %% `throw(stop)' in the post action function
 %%
 %% @end
-add(Name, Fun) when is_atom(Name),
-                    is_function(Fun) ->
+add(Name, Fun) when
+    is_atom(Name),
+    is_function(Fun)
+->
     gen_server:call(?SERVER, {add, {Name, Fun}});
-add(Name, {Mod, Fun, Args} = MFArgs) when is_atom(Name),
-                                          is_atom(Mod), is_atom(Fun), is_list(Args) ->
+add(Name, {Mod, Fun, Args} = MFArgs) when
+    is_atom(Name),
+    is_atom(Mod),
+    is_atom(Fun),
+    is_list(Args)
+->
     gen_server:call(?SERVER, {add, {Name, MFArgs}}).
 
 delete(Name) when is_atom(Name) ->
@@ -132,26 +147,27 @@ handle_cast({event, Event}, State) ->
 actions(Event) ->
     Actions = ets:tab2list(?TABLE),
     Func =
-        fun(Action, {stop, Acc}) ->
-                #action{name=Name} = Action,
+        fun
+            (Action, {stop, Acc}) ->
+                #action{name = Name} = Action,
                 Result = {error, {stop, Name}},
                 {stop, Acc ++ [Result]};
-           (Action, {_, Acc}) ->
+            (Action, {_, Acc}) ->
                 Result = maybe_do_action(Event, Action),
                 StopOrCont =
-                case Result of
-                    {ok, {stop, _}} ->
-                        stop;
-                    _ ->
-                        continue
-                end,
+                    case Result of
+                        {ok, {stop, _}} ->
+                            stop;
+                        _ ->
+                            continue
+                    end,
                 {StopOrCont, Acc ++ [Result]}
         end,
     {_, Result} = lists:foldl(Func, {start, []}, Actions),
     Result.
 
 maybe_do_action(_Event, Action) ->
-    #action{name=Name, func=Func} = Action,
+    #action{name = Name, func = Func} = Action,
     try
         Result = eval_func(Func),
         edt_out:stdout("action: ~p done result: ~p", [Name, Result]),
@@ -167,12 +183,23 @@ maybe_do_action(_Event, Action) ->
     end.
 
 format(Stacktrace) ->
-    Stacktrace1 = [ ([Path, ":", edt_lib:to_binary(LineNum), ":", " ",
-                      edt_lib:to_binary(M), ":", edt_lib:to_binary(F), "/", edt_lib:to_binary(Arity)])
-                    || {M, F, Arity, [{file, Path}, {line, LineNum}]} <- Stacktrace],
+    Stacktrace1 = [
+        ([
+            Path,
+            ":",
+            edt_lib:to_binary(LineNum),
+            ":",
+            " ",
+            edt_lib:to_binary(M),
+            ":",
+            edt_lib:to_binary(F),
+            "/",
+            edt_lib:to_binary(Arity)
+        ])
+     || {M, F, Arity, [{file, Path}, {line, LineNum}]} <- Stacktrace
+    ],
     Stacktrace2 = string:join(Stacktrace1, "\n"),
     iolist_to_binary(Stacktrace2).
-
 
 eval_func(Func) when is_function(Func) ->
     Func();

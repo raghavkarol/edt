@@ -3,42 +3,53 @@
 %%
 -module(edt_lib).
 
--export([to_atom/1,
-         to_binary/1,
-         to_integer/1,
-         to_string/1,
-         to_boolean/1]).
+-export([
+    to_atom/1,
+    to_binary/1,
+    to_integer/1,
+    to_string/1,
+    to_boolean/1
+]).
 
--export([retry/2,
-         retry/3,
-         retry_until/1,
-         retry_until/2]).
+-export([
+    retry/2,
+    retry/3,
+    retry_until/1,
+    retry_until/2
+]).
 
--export([parse_rebar3_profile/1,
-         is_eunit_generator/1,
-         which_test/1]).
+-export([
+    parse_rebar3_profile/1,
+    is_eunit_generator/1,
+    which_test/1
+]).
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 -endif.
 
-to_atom(V)
-  when is_binary(V) ->
+to_atom(V) when
+    is_binary(V)
+->
     V1 = binary_to_atom(V, 'utf8'),
     to_atom(V1);
-to_atom(V)
-  when is_integer(V) ->
+to_atom(V) when
+    is_integer(V)
+->
     V1 = integer_to_list(V),
     to_atom(V1);
-to_atom(V)
-  when is_list(V) ->
+to_atom(V) when
+    is_list(V)
+->
     list_to_atom(V);
-to_atom(V)
-  when is_atom(V) ->
+to_atom(V) when
+    is_atom(V)
+->
     V.
 
-to_binary(V)
-  when is_binary(V) ->
+to_binary(V) when
+    is_binary(V)
+->
     V;
 to_binary(V) when is_list(V) ->
     list_to_binary(V);
@@ -62,7 +73,7 @@ to_boolean(_) ->
 
 to_integer(V) when is_list(V) ->
     list_to_integer(V);
-to_integer(V) when is_integer(V)->
+to_integer(V) when is_integer(V) ->
     V.
 
 to_string(V) when is_binary(V) ->
@@ -86,10 +97,10 @@ retry(F, Expected) ->
 retry(F, Expected, Timeout) ->
     retry(F, Expected, '_', Timeout).
 
-retry(_, Expected, Actual, Timeout)
-  when Timeout =< 0 ->
-    error({retry_timeout,
-           {expected, Expected, actual, Actual}});
+retry(_, Expected, Actual, Timeout) when
+    Timeout =< 0
+->
+    error({retry_timeout, {expected, Expected, actual, Actual}});
 retry(F, Expected, _, Timeout) ->
     SleepTime = 100,
     case F() of
@@ -97,11 +108,10 @@ retry(F, Expected, _, Timeout) ->
             Expected;
         Actual ->
             timer:sleep(SleepTime),
-            retry(F, Expected, Actual, Timeout-SleepTime)
+            retry(F, Expected, Actual, Timeout - SleepTime)
     end.
 
-
--spec which_test(Path :: edt:path()) -> 'ct'|'eunit'.
+-spec which_test(Path :: edt:path()) -> 'ct' | 'eunit'.
 which_test(Path) ->
     Path1 = to_binary(Path),
     case re:run(Path1, <<"_SUITE.erl">>, [{capture, none}]) of
@@ -130,21 +140,25 @@ parse_rebar3_profile(Cmd) ->
 %% ---------------------------------------------------------
 -ifdef(TEST).
 retry_test_() ->
-    [fun() ->
-             1 = retry(fun() -> 1 end, 1)
-     end,
-     fun() ->
-             {'EXIT', {{retry_timeout,{expected,1,actual,2}}, _}} = (catch retry(fun() -> 2 end, 1, 100))
-     end,
-     fun() ->
-             true = retry_until(fun() -> true end)
-     end,
-     fun() ->
-             true = retry_until(fun() -> true end, 1)
-     end,
-     fun() ->
-             {'EXIT', {{retry_timeout,{expected,true,actual,false}}, _}} = (catch retry_until(fun() -> false end, 1))
-     end].
+    [
+        fun() ->
+            1 = retry(fun() -> 1 end, 1)
+        end,
+        fun() ->
+            {'EXIT', {{retry_timeout, {expected, 1, actual, 2}}, _}} =
+                (catch retry(fun() -> 2 end, 1, 100))
+        end,
+        fun() ->
+            true = retry_until(fun() -> true end)
+        end,
+        fun() ->
+            true = retry_until(fun() -> true end, 1)
+        end,
+        fun() ->
+            {'EXIT', {{retry_timeout, {expected, true, actual, false}}, _}} =
+                (catch retry_until(fun() -> false end, 1))
+        end
+    ].
 
 which_test_test() ->
     eunit = which_test("checkouts/src/edt.erl"),
@@ -193,7 +207,7 @@ parse_rebar3_profile_test() ->
     "default" = parse_rebar3_profile("rebar3 shell --apps edt"),
 
     {error, Error} = parse_rebar3_profile("erl"),
-    {not_parseable, {nomatch,"erl"}} = Error,
+    {not_parseable, {nomatch, "erl"}} = Error,
     ok.
 
 -endif.

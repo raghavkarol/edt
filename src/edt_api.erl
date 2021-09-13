@@ -3,8 +3,10 @@
 %%
 -module(edt_api).
 
--export([compile/1,
-         test/1, test/2, test/3]).
+-export([
+    compile/1,
+    test/1, test/2, test/3
+]).
 %% ---------------------------------------------------------
 %% API
 %% ---------------------------------------------------------
@@ -18,8 +20,10 @@
 compile(Module) when is_atom(Module) ->
     Path = edt:source_path(Module),
     compile(Path);
-compile(Path) when is_list(Path);
-                   is_binary(Path) ->
+compile(Path) when
+    is_list(Path);
+    is_binary(Path)
+->
     Result = edt:compile(Path),
     case Result of
         {ok, _} ->
@@ -29,7 +33,6 @@ compile(Path) when is_list(Path);
         {error, _} = E ->
             E
     end.
-
 
 %%
 %% @doc Discover and the run the tests in Module. If TestCase is not
@@ -49,7 +52,7 @@ test(Module, TestCase, Opts) ->
     case Result of
         {ok, _} ->
             edt:test(Type, Module, TestCase, Opts);
-        {error, _}=E ->
+        {error, _} = E ->
             Report = edt_compile_result:format(Result, text),
             edt_out:stdout(Report),
             E
@@ -58,5 +61,5 @@ test(Module, TestCase, Opts) ->
 test(Module, TestCase) ->
     test(Module, TestCase, []).
 
-test(Module)  ->
+test(Module) ->
     test(Module, undefined, []).

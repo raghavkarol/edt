@@ -5,53 +5,66 @@
 %%
 -module(edt).
 
--export([compile/1,
-         compile/2,
-         reload/1,
-         test/4]).
-
--export([file_type/1,
-         get_env/1,
-         get_env/2,
-         includes/0]).
+-export([
+    compile/1,
+    compile/2,
+    reload/1,
+    test/4
+]).
 
 -export([
-         ct_groups/2,
-         module_name/1,
-         outdir/1,
-         parse_path/1,
-         relative_path/1,
-         source_path/1]).
+    file_type/1,
+    get_env/1,
+    get_env/2,
+    includes/0
+]).
 
--export([auto_process/0,
-         enable_http_server/0,
-         home/0,
-         http_port/0,
-         ignore_regex/0,
-         rebar3_profile/0]).
+-export([
+    ct_groups/2,
+    module_name/1,
+    outdir/1,
+    parse_path/1,
+    relative_path/1,
+    source_path/1
+]).
+
+-export([
+    auto_process/0,
+    enable_http_server/0,
+    home/0,
+    http_port/0,
+    ignore_regex/0,
+    rebar3_profile/0
+]).
 %% Types
--type compile_msgs() :: [{Path :: edt:path(),
-                          [{LineNum :: integer(), module(), atom()
-                            | {atom(), any()}}]}].
+-type compile_msgs() :: [
+    {Path :: edt:path(), [
+        {
+            LineNum :: integer(),
+            module(),
+            atom()
+            | {atom(), any()}
+        }
+    ]}
+].
 
--type compile_ret() :: {ok, {Path :: path(), module(), list()}}
-                     | {error, {Errors :: compile_msgs(),
-                                Warnings :: compile_msgs()}}.
-
+-type compile_ret() ::
+    {ok, {Path :: path(), module(), list()}}
+    | {error, {Errors :: compile_msgs(), Warnings :: compile_msgs()}}.
 
 -type path() :: string() | binary().
 
 %% ---------------------------------------------------------
 %% API
 %% ---------------------------------------------------------
--spec compile(Path:: path()) -> compile_ret().
+-spec compile(Path :: path()) -> compile_ret().
 compile(Path) ->
     compile(Path, []).
 
--spec compile(Path:: path(), Opts :: list()) -> compile_ret().
+-spec compile(Path :: path(), Opts :: list()) -> compile_ret().
 compile(Path, Opts) ->
     case parse_path(Path) of
-        {error, {Path, unknown}} = E  ->
+        {error, {Path, unknown}} = E ->
             E;
         {ok, _} ->
             Opts1 = Opts ++ compile_opts(Path),
@@ -89,11 +102,12 @@ eunit_opts() ->
 
 includes() ->
     Home = home(),
-    Includes = [filename:join([Home, "include"])] ++
-        filelib:wildcard([Home, "/_checkouts/*/src"]) ++
-        filelib:wildcard([Home, "/_checkouts/*/include"]) ++
-        filelib:wildcard([Home, "/_build/", rebar3_profile() ,"/lib/*/src"]) ++
-        filelib:wildcard([Home, "/_build/", rebar3_profile() ,"/lib/*/include"]),
+    Includes =
+        [filename:join([Home, "include"])] ++
+            filelib:wildcard([Home, "/_checkouts/*/src"]) ++
+            filelib:wildcard([Home, "/_checkouts/*/include"]) ++
+            filelib:wildcard([Home, "/_build/", rebar3_profile(), "/lib/*/src"]) ++
+            filelib:wildcard([Home, "/_build/", rebar3_profile(), "/lib/*/include"]),
     lists:usort(Includes).
 
 outdir(Path) ->
@@ -130,7 +144,6 @@ http_port() ->
 enable_http_server() ->
     edt_lib:to_boolean(edt:get_env(enable_http_server, "0")).
 
-
 %% ---------------------------------------------------------
 %% Internal Functions
 %% ---------------------------------------------------------
@@ -142,29 +155,28 @@ enable_http_server() ->
 %% to.
 %%
 %% @end
--spec parse_path(string) -> {ok, {src|test|{src, checkouts}|{test, checkouts},
-                                  string(),
-                                  string()}} |
-                            {error, {unknown, string()}}.
+-spec parse_path(string) ->
+    {ok, {src | test | {src, checkouts} | {test, checkouts}, string(), string()}}
+    | {error, {unknown, string()}}.
 parse_path(Path) ->
     Path1 = filename:absname(Path),
     Tokens = lists:reverse(filename:split(Path1)),
     FunPrefix =
         fun(V) ->
-                filename:join(lists:reverse(V))
+            filename:join(lists:reverse(V))
         end,
     case Tokens of
-        [_ ,"src", "eunit", "test", App|Rest] ->
+        [_, "src", "eunit", "test", App | Rest] ->
             {ok, {test, App, FunPrefix(Rest)}};
-        [_ ,"src", "ct", "test", App|Rest] ->
+        [_, "src", "ct", "test", App | Rest] ->
             {ok, {test, App, FunPrefix(Rest)}};
-        [_, "src", App, "_checkouts"|Rest] ->
+        [_, "src", App, "_checkouts" | Rest] ->
             {ok, {{src, checkouts}, App, FunPrefix(Rest)}};
-        [_, "test", App, "_checkouts"|Rest] ->
+        [_, "test", App, "_checkouts" | Rest] ->
             {ok, {{test, checkouts}, App, FunPrefix(Rest)}};
-        [_, "src", App|Rest] ->
+        [_, "src", App | Rest] ->
             {ok, {src, App, FunPrefix(Rest)}};
-        [_, "test", App|Rest] ->
+        [_, "test", App | Rest] ->
             {ok, {test, App, FunPrefix(Rest)}};
         _ ->
             {error, {Path, unknown}}
@@ -204,7 +216,6 @@ ensure_code_path(Path) ->
     OutDir1 = filename:absname(OutDir),
     code:add_patha(OutDir1).
 
-
 eunit(Module, TestCase, Opts) ->
     Opts1 = eunit_opts() ++ Opts,
     Spec =
@@ -224,12 +235,15 @@ eunit(Module, TestCase, Opts) ->
 ct(Module, TestCase, Opts) ->
     LogDir = "./_build/test/logs/",
     Dir = filename:dirname(source_path(Module)),
-    Opts1 = [{auto_compile, false},
-             {dir, Dir},
-             {logdir, LogDir}]
-        ++ edt:ct_groups(Module, TestCase)
-        ++ [{suite, Module} || Module /= undefined ]
-        ++ [{testcase, TestCase} || TestCase /= undefined ],
+    Opts1 =
+        [
+            {auto_compile, false},
+            {dir, Dir},
+            {logdir, LogDir}
+        ] ++
+            edt:ct_groups(Module, TestCase) ++
+            [{suite, Module} || Module /= undefined] ++
+            [{testcase, TestCase} || TestCase /= undefined],
     Opts2 = Opts1 ++ Opts,
     filelib:ensure_dir(LogDir),
     ct:run_test(Opts2).
@@ -238,9 +252,13 @@ ct_groups(Module, Case) ->
     Group =
         try Module:groups() of
             Groups ->
-                [ Name || {Name, _Props, Cases} <- Groups,
-                          proplists:get_value(Case, Cases, false)]
-        catch error:undef ->
+                [
+                    Name
+                 || {Name, _Props, Cases} <- Groups,
+                    proplists:get_value(Case, Cases, false)
+                ]
+        catch
+            error:undef ->
                 []
         end,
     case Group of
@@ -270,4 +288,4 @@ get_env(Key) ->
 %% internal functions
 to_osenv_var(Key) ->
     Key1 = atom_to_list(Key),
-    "EDT_" ++  string:uppercase(Key1).
+    "EDT_" ++ string:uppercase(Key1).

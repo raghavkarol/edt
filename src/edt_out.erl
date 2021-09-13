@@ -14,24 +14,32 @@
 -behaviour(gen_server).
 
 %% API
--export([start/0,
-         start_link/0,
-         stop/0]).
+-export([
+    start/0,
+    start_link/0,
+    stop/0
+]).
 
--export([io_server/0,
-         stdout/1,
-         stdout/2,
-         stdout/3]).
+-export([
+    io_server/0,
+    stdout/1,
+    stdout/2,
+    stdout/3
+]).
 
 %% gen_server callbacks
--export([init/1,
-         handle_call/3,
-         handle_cast/2]).
+-export([
+    init/1,
+    handle_call/3,
+    handle_cast/2
+]).
 
 -define(SERVER, ?MODULE).
 
--record(state, {ref :: reference(),
-                io_server :: pid()}).
+-record(state, {
+    ref :: reference(),
+    io_server :: pid()
+}).
 
 %% ---------------------------------------------------------
 %% Gen server control API
@@ -90,14 +98,25 @@ handle_cast(_Request, State) ->
 datetime() ->
     Pad =
         fun(V) ->
-                io_lib:format("~2..0B", [V])
+            io_lib:format("~2..0B", [V])
         end,
-    {{Year, Mon, Day},{Hour, Min, Sec}} = calendar:local_time(),
+    {{Year, Mon, Day}, {Hour, Min, Sec}} = calendar:local_time(),
     Str =
         fun(V) ->
-          edt_lib:to_string(V)
+            edt_lib:to_string(V)
         end,
 
-    DT = [Str(Year), $-, Str(Mon), $-, Str(Day), " ",
-          Pad(Hour), $:, Pad(Min), $:, Pad(Sec)],
+    DT = [
+        Str(Year),
+        $-,
+        Str(Mon),
+        $-,
+        Str(Day),
+        " ",
+        Pad(Hour),
+        $:,
+        Pad(Min),
+        $:,
+        Pad(Sec)
+    ],
     iolist_to_binary(DT).

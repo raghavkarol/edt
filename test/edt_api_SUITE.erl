@@ -9,7 +9,7 @@ suite() ->
 
 init_per_suite(Config) ->
     {ok, Home} = ct_helper:setup_test_data(Config),
-    [{home, Home}|Config].
+    [{home, Home} | Config].
 
 end_per_suite(_Config) ->
     ok.
@@ -21,11 +21,13 @@ end_per_testcase(_TestCase, _Config) ->
     ok.
 
 all() ->
-    [test_compile_ok,
-     test_compile_fail,
-     test_ct,
-     test_eunit_ok,
-     test_eunit_error].
+    [
+        test_compile_ok,
+        test_compile_fail,
+        test_ct,
+        test_eunit_ok,
+        test_eunit_error
+    ].
 
 test_compile_ok(Config) ->
     Home = ?config(home, Config),

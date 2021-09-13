@@ -26,12 +26,14 @@ end_per_testcase(_TestCase, _Config) ->
     ok.
 
 all() ->
-    [test_async_event,
-     test_crud,
-     test_start_link,
-     test_sync_event,
-     test_post_action_stop,
-     test_post_action_error].
+    [
+        test_async_event,
+        test_crud,
+        test_start_link,
+        test_sync_event,
+        test_post_action_stop,
+        test_post_action_error
+    ].
 
 test_crud(_Config) ->
     Fun1 = fun() -> ok end,
@@ -52,9 +54,9 @@ test_async_event(_Config) ->
     Now = erlang:system_time(microsecond),
     Fun =
         fun(Name) ->
-                fun() ->
-                        ets:insert(Table, {Name, erlang:system_time(microsecond) - Now})
-                end
+            fun() ->
+                ets:insert(Table, {Name, erlang:system_time(microsecond) - Now})
+            end
         end,
     edt_post_action:add(test1, Fun(test1)),
     edt_post_action:add(test2, Fun(test2)),
@@ -64,7 +66,7 @@ test_async_event(_Config) ->
     Expected = [test1, test2, test3],
     FunActual =
         fun() ->
-                lists:sort([Name || {Name ,_} <- ets:tab2list(Table)])
+            lists:sort([Name || {Name, _} <- ets:tab2list(Table)])
         end,
     edt_lib:retry(FunActual, Expected),
     ok.
@@ -74,18 +76,20 @@ test_sync_event(_Config) ->
     Now = erlang:system_time(microsecond),
     Fun =
         fun(Name) ->
-                fun() ->
-                        ets:insert(Table, {Name, erlang:system_time(microsecond) - Now})
-                end
+            fun() ->
+                ets:insert(Table, {Name, erlang:system_time(microsecond) - Now})
+            end
         end,
     edt_post_action:add(test1, Fun(test1)),
     edt_post_action:add(test2, Fun(test2)),
     edt_post_action:add(test3, Fun(test3)),
     edt_post_action:add(test4, {?MODULE, mfa_ets_insert, [Table, test4, Now]}),
-    Expected = [{ok, {test1, true}},
-                {ok, {test2, true}},
-                {ok, {test3, true}},
-                {ok, {test4, true}}],
+    Expected = [
+        {ok, {test1, true}},
+        {ok, {test2, true}},
+        {ok, {test3, true}},
+        {ok, {test4, true}}
+    ],
     Actual = edt_post_action:sync_event(testing),
     Expected = Actual,
     InsertTs = [Ts || {_Name, Ts} <- ets:tab2list(Table)],
@@ -98,10 +102,12 @@ test_post_action_stop(_Config) ->
     edt_post_action:add(test2, Fun),
     edt_post_action:add(test3, Fun),
     edt_post_action:add(test4, {?MODULE, mfa_throw, [stop]}),
-    Expected = [{ok, {stop, test1}},
-                {error, {stop, test2}},
-                {error, {stop, test3}},
-                {error, {stop, test4}}],
+    Expected = [
+        {ok, {stop, test1}},
+        {error, {stop, test2}},
+        {error, {stop, test3}},
+        {error, {stop, test4}}
+    ],
     Actual = edt_post_action:sync_event(testing),
     Expected = Actual,
     ok.
@@ -112,10 +118,12 @@ test_post_action_error(_Config) ->
     edt_post_action:add(test2, Fun),
     edt_post_action:add(test3, Fun),
     edt_post_action:add(test4, {?MODULE, mfa_error, [fail]}),
-    Expected = [{error,{test1,{error,fail}}},
-                {error,{test2,{error,fail}}},
-                {error,{test3,{error,fail}}},
-                {error,{test4,{error,fail}}}],
+    Expected = [
+        {error, {test1, {error, fail}}},
+        {error, {test2, {error, fail}}},
+        {error, {test3, {error, fail}}},
+        {error, {test4, {error, fail}}}
+    ],
     Actual = edt_post_action:sync_event(testing),
     Expected = Actual,
     ok.

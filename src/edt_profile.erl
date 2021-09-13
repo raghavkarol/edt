@@ -17,21 +17,29 @@
 -behaviour(gen_server).
 
 %% gen_server API
--export([start/0,
-         start_link/0,
-         stop/0]).
+-export([
+    start/0,
+    start_link/0,
+    stop/0
+]).
 
 %% gen_server callbacks
--export([init/1,
-         handle_call/3, handle_cast/2, handle_info/2,
-         terminate/2]).
+-export([
+    init/1,
+    handle_call/3,
+    handle_cast/2,
+    handle_info/2,
+    terminate/2
+]).
 
 %% API
--export([trace/1,
-         trace/2,
-         trace/3,
-         trace/4,
-         trace_opts/2]).
+-export([
+    trace/1,
+    trace/2,
+    trace/3,
+    trace/4,
+    trace_opts/2
+]).
 
 -export([stat_call/1, stat_call/2]).
 
@@ -40,11 +48,12 @@
 
 -define(SERVER, ?MODULE).
 
--record(state,
-        {context_stack,
-         call_stack,
-         seq_no,
-         opts}).
+-record(state, {
+    context_stack,
+    call_stack,
+    seq_no,
+    opts
+}).
 
 %% ---------------------------------------------------------
 %% Gen server API
@@ -117,7 +126,7 @@ stat_call(Id) ->
 %% @doc describe all calls for module and function
 stat_call(Module, Func) ->
     Calls = edt_profile_store:find_crecs(Module, Func),
-    lists:sort(fun(#crec{seq_no=A}, #crec{seq_no=B}) -> A =< B end, Calls).
+    lists:sort(fun(#crec{seq_no = A}, #crec{seq_no = B}) -> A =< B end, Calls).
 
 %% ---------------------------------------------------------
 %% Gen server callbacks
@@ -143,17 +152,20 @@ handle_info({call, {Pid, M, F, Args, Arity, StartTime, StartReds}}, State) ->
     Call = new_call(M, F, Args, Arity, SeqNo, StartTime, StartReds),
     Stack1 = push(Stack, Pid, Call),
     maybe_track_call(ContextId, Pid, Call, State),
-    State2 = State1#state{seq_no = SeqNo+1, call_stack = Stack1},
+    State2 = State1#state{seq_no = SeqNo + 1, call_stack = Stack1},
     {noreply, State2};
 handle_info({return_from, {Pid, M, F, Arity, Result, EndTime, EndReds}}, State) ->
     %% io:format("~s:~p: handle_info return_from: ~p:~p ~n", [string:replace(code:which(?MODULE), ".beam", ".erl"), ?LINE, M, F]),
     {ContextId, State1} = maybe_stop_context(Pid, M, F, State),
     {Call, ExCalls, Stack1} = pop(Pid, M, F, State),
     State2 = State1#state{call_stack = Stack1},
-    maybe_track_call(ContextId, Pid, Call, State2, Result, EndTime, EndReds), %TODO track return values and times
+    %TODO track return values and times
+    maybe_track_call(ContextId, Pid, Call, State2, Result, EndTime, EndReds),
     maybe_track_exceptions(State, Pid, ExCalls),
     %% TODO: summary for exception calls as well?
-    edt_profile_store:track_summary(ContextId, Pid, Call, Arity, EndTime, EndReds), % Store aggregatee results accross pids
+
+    % Store aggregatee results accross pids
+    edt_profile_store:track_summary(ContextId, Pid, Call, Arity, EndTime, EndReds),
     {noreply, State2}.
 
 terminate(_Reason, _State) ->
@@ -164,20 +176,26 @@ terminate(_Reason, _State) ->
 default_trace_opts() ->
     Track = edt:get_env(profile_track_calls, false),
     Max = edt:get_env(profile_max_calls, 100),
-    #{track_calls => Track,
-      max_calls => Max}.
+    #{
+        track_calls => Track,
+        max_calls => Max
+    }.
 
 default_trace_fopts() ->
     Capture = edt:get_env(profile_capture, false),
     StartContext = edt:get_env(profile_start_context, false),
-    #{capture => Capture,
-      start_context => StartContext}.
+    #{
+        capture => Capture,
+        start_context => StartContext
+    }.
 
 new_state() ->
-    #state{context_stack = #{},
-           call_stack = new_call_stack(),
-           seq_no = 0,
-           opts = #{}}.
+    #state{
+        context_stack = #{},
+        call_stack = new_call_stack(),
+        seq_no = 0,
+        opts = #{}
+    }.
 
 timestamp() ->
     erlang:system_time(microsecond).
@@ -186,26 +204,37 @@ new_call_stack() ->
     #{}.
 
 new_call(M, F, Args, Arity, SeqNo, StartTime, StartReds) ->
-    #call{module=M, func=F, args=Args, arity=Arity, seq_no=SeqNo, start_time=StartTime, start_reds=StartReds}.
+    #call{
+        module = M,
+        func = F,
+        args = Args,
+        arity = Arity,
+        seq_no = SeqNo,
+        start_time = StartTime,
+        start_reds = StartReds
+    }.
 
 push(Stack, Pid, Top) ->
-    maps:update_with(Pid, fun(Stack1) -> [Top|Stack1] end, [Top], Stack).
+    maps:update_with(Pid, fun(Stack1) -> [Top | Stack1] end, [Top], Stack).
 
 pop(Pid, Stack) ->
     Top = peek(Pid, Stack, undefined),
-    Stack1 = maps:update_with(Pid,
-                              fun([_|Stack1]) ->
-                                      Stack1;
-                                 ([]) ->
-                                      []
-                              end,
-                              [],
-                              Stack),
+    Stack1 = maps:update_with(
+        Pid,
+        fun
+            ([_ | Stack1]) ->
+                Stack1;
+            ([]) ->
+                []
+        end,
+        [],
+        Stack
+    ),
     {Top, Stack1}.
 
 peek(Pid, Stack, Default) ->
     case maps:get(Pid, Stack, []) of
-        [Top|_] ->
+        [Top | _] ->
             Top;
         [] ->
             Default
@@ -224,8 +253,8 @@ all(Pid, Stack) ->
 %%   {[{a, f1}, {a, f2}], [{b, f1}, {c, f1}, ...]}
 partition(M, F, Calls) ->
     Pred =
-        fun(#call{module=M1, func=F1}) ->
-                not (M1 == M andalso F1 == F)
+        fun(#call{module = M1, func = F1}) ->
+            not (M1 == M andalso F1 == F)
         end,
     {lists:takewhile(Pred, Calls), lists:dropwhile(Pred, Calls)}.
 
@@ -235,7 +264,8 @@ pop(Pid, M, F, State) ->
         [] ->
             {undefined, [], Stack};
         Calls ->
-            {ExCalls, Calls2} = partition(M, F, Calls), %TODO include arity
+            %TODO include arity
+            {ExCalls, Calls2} = partition(M, F, Calls),
             Call = hd(Calls2),
             Calls3 =
                 case Calls2 of
@@ -245,7 +275,6 @@ pop(Pid, M, F, State) ->
                         lists:nthtail(1, Calls2)
                 end,
             {Call, ExCalls, Stack#{Pid => Calls3}}
-
     end.
 
 track_exception(Pid, Call) ->
@@ -268,7 +297,7 @@ stop_context1(State, Pid) ->
 maybe_track_exceptions(#state{opts = #{track_calls := true}}, Pid, ExCalls) ->
     Fun =
         fun(ECall) ->
-                track_exception(Pid, ECall)
+            track_exception(Pid, ECall)
         end,
     lists:foreach(Fun, ExCalls);
 maybe_track_exceptions(_, _, _) ->
@@ -283,12 +312,14 @@ maybe_track_call(ContextId, Pid, Call, State) ->
 maybe_track_call(_ContextId, _Pid, undefined, _State, _Result, _EndTime, _EndReds) ->
     ok;
 maybe_track_call(ContextId, Pid, Call, State, Result, EndTime, EndReds) ->
-    #state{call_stack = Stack,
-           opts = Opts} = State,
+    #state{
+        call_stack = Stack,
+        opts = Opts
+    } = State,
     case Opts of
         #{track_calls := true} ->
             case maps:get(Pid, Stack, []) of
-                [PCall|_] ->
+                [PCall | _] ->
                     CallerId = edt_profile_store:crec_id(Pid, PCall);
                 [] ->
                     CallerId = 0
@@ -328,7 +359,7 @@ to_trace_spec({M, F}) ->
 to_trace_spec({M, F, FOpts}) ->
     FOpts1 = maps:merge(default_trace_fopts(), FOpts),
     to_trace_spec({M, F, FOpts1, '_'});
-to_trace_spec({_, _, _, _}=Spec) ->
+to_trace_spec({_, _, _, _} = Spec) ->
     Spec.
 
 reductions(Pid) ->
@@ -359,14 +390,15 @@ fopts(M, F, Opts) ->
     maps:get({M, F}, Opts, Map1).
 
 fun_capture_args(Opts, Caller) ->
-    fun({trace, Pid, call, {M, F, Args}}) ->
+    fun
+        ({trace, Pid, call, {M, F, Args}}) ->
             Reductions = reductions(Pid),
             FOpts = fopts(M, F, Opts),
             Arity = length(Args),
             Args1 = maybe_capture_args(FOpts, Args),
             Caller ! {call, {Pid, M, F, Args1, Arity, timestamp(), Reductions}},
             "";
-       ({trace, Pid, return_from, {M, F, Arity}, Result}) ->
+        ({trace, Pid, return_from, {M, F, Arity}, Result}) ->
             Reductions = reductions(Pid),
             FOpts = fopts(M, F, Opts),
             Result1 = maybe_capture_result(FOpts, Result),
@@ -376,24 +408,28 @@ fun_capture_args(Opts, Caller) ->
 
 init_tracer(Specs, Opts) ->
     Specs1 = lists:map(
-               fun({M, F, _FOpts, ArgSpec}) ->
-                       {M, F, [{ArgSpec, [], [{return_trace}]}]}
-               end,
-               Specs),
+        fun({M, F, _FOpts, ArgSpec}) ->
+            {M, F, [{ArgSpec, [], [{return_trace}]}]}
+        end,
+        Specs
+    ),
     Fun = fun_capture_args(Opts, self()),
-    ReconOpts = [{scope, local},
-                 {formatter, Fun}],
+    ReconOpts = [
+        {scope, local},
+        {formatter, Fun}
+    ],
     MaxCalls = maps:get(max_calls, Opts, 10),
     ok = recon_trace:clear(),
     recon_trace:calls(Specs1, MaxCalls, ReconOpts).
 
 trace1(Specs, TOpts) ->
     Opts1 = lists:foldl(
-              fun({M, F, FOpts, _ArgSpec}, Acc) ->
-                      Acc#{{M, F} => FOpts}
-              end,
-              #{},
-              Specs),
+        fun({M, F, FOpts, _ArgSpec}, Acc) ->
+            Acc#{{M, F} => FOpts}
+        end,
+        #{},
+        Specs
+    ),
 
     Opts2 = maps:merge(TOpts, Opts1),
     Result = init_tracer(Specs, Opts2),

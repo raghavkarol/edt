@@ -23,14 +23,16 @@ end_per_testcase(_TestCase, _Config) ->
     ok.
 
 all() ->
-    [test_trace1_without_opts,
-     test_trace1_with_opts,
-     test_trace2,
-     test_trace3,
-     test_trace4,
-     test_summary,
-     test_call_graph,
-     test_capture].
+    [
+        test_trace1_without_opts,
+        test_trace1_with_opts,
+        test_trace2,
+        test_trace3,
+        test_trace4,
+        test_summary,
+        test_call_graph,
+        test_capture
+    ].
 
 test_trace1_without_opts(_Config) ->
     edt_profile:trace([{edt_profile_SUITE, one}]),
@@ -68,18 +70,22 @@ test_trace4(_Config) ->
     ok.
 
 test_summary(_Config) ->
-    edt_profile:trace([{edt_profile_SUITE, one},
-                       {edt_profile_SUITE, two},
-                       {edt_profile_SUITE, three}]),
+    edt_profile:trace([
+        {edt_profile_SUITE, one},
+        {edt_profile_SUITE, two},
+        {edt_profile_SUITE, three}
+    ]),
     one(),
     timer:sleep(100),
     edt_profile_pprint:summary(),
     ok.
 
 test_call_graph(_Config) ->
-    Specs = [{edt_profile_SUITE, one},
-             {edt_profile_SUITE, two},
-             {edt_profile_SUITE, three}],
+    Specs = [
+        {edt_profile_SUITE, one},
+        {edt_profile_SUITE, two},
+        {edt_profile_SUITE, three}
+    ],
     Opts = #{track_calls => true},
     edt_profile:trace_opts(Specs, Opts),
     one(),
@@ -94,10 +100,12 @@ test_capture(_Config) ->
     one(),
     timer:sleep(100),
     [CRec] = edt_profile:stat_call(edt_profile_SUITE, one),
-    #crec{module = edt_profile_SUITE,
-          func = one} = CRec,
-    #crec{args = []} = CRec ,
-    #crec{result = ok} = CRec ,
+    #crec{
+        module = edt_profile_SUITE,
+        func = one
+    } = CRec,
+    #crec{args = []} = CRec,
+    #crec{result = ok} = CRec,
     CRec = edt_profile:stat_call(CRec#crec.id),
     ok.
 

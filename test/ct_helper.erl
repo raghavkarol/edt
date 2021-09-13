@@ -19,21 +19,27 @@ setup_test_data(Config) ->
     ok = filelib:ensure_dir("_build/default/lib/" ++ TestDir ++ "/test/"),
 
     {ok, _} = file:copy(
-                Src("/test_compile_ok"),
-                Dst("/src/test_compile_ok.erl")),
+        Src("/test_compile_ok"),
+        Dst("/src/test_compile_ok.erl")
+    ),
     {ok, _} = file:copy(
-                Src("/test_compile_fail"),
-                Dst("/src/test_compile_fail.erl")),
+        Src("/test_compile_fail"),
+        Dst("/src/test_compile_fail.erl")
+    ),
     {ok, _} = file:copy(
-                Src("/ct_SUITE"),
-                Dst("/test/ct_SUITE.erl")),
+        Src("/ct_SUITE"),
+        Dst("/test/ct_SUITE.erl")
+    ),
     {ok, _} = file:copy(
-                Src("/ct_groups_SUITE"),
-                Dst("/test/ct_groups_SUITE.erl")),
+        Src("/ct_groups_SUITE"),
+        Dst("/test/ct_groups_SUITE.erl")
+    ),
     {ok, _} = file:copy(
-                Src("/ct_groups_empty_SUITE"),
-                Dst("/test/ct_groups_empty_SUITE.erl")),
+        Src("/ct_groups_empty_SUITE"),
+        Dst("/test/ct_groups_empty_SUITE.erl")
+    ),
     {ok, _} = file:copy(
-                Src("/eunit_test1"),
-                Dst("/test/eunit_test1.erl")),
+        Src("/eunit_test1"),
+        Dst("/test/eunit_test1.erl")
+    ),
     {ok, PrivDir}.

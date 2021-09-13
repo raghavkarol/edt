@@ -1,15 +1,17 @@
-{application, edt,
- [{description, "Erlang Development Tools"},
-  {vsn, git},
-  {registered, []},
-  {mod, {edt_app, []}},
-  {applications,
-   [kernel,
-    stdlib,
-    cowboy,
-    fs,
-    unite]},
-  {env,[]},
-  {modules, []},
-  {licenses, ["MIT"]},
-  {links, []}]}.
+{application, edt, [
+    {description, "Erlang Development Tools"},
+    {vsn, git},
+    {registered, []},
+    {mod, {edt_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        cowboy,
+        fs,
+        unite
+    ]},
+    {env, []},
+    {modules, []},
+    {licenses, ["MIT"]},
+    {links, []}
+]}.

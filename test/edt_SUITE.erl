@@ -10,7 +10,7 @@ suite() ->
 
 init_per_suite(Config) ->
     {ok, Home} = ct_helper:setup_test_data(Config),
-    [{home, Home}|Config].
+    [{home, Home} | Config].
 
 end_per_suite(_Config) ->
     ok.
@@ -24,18 +24,20 @@ end_per_testcase(_TestCase, _Config) ->
     ok.
 
 all() ->
-    [test_file_type,
-     test_compile,
-     test_eunit,
-     test_ct,
-     test_get_env,
-     test_home,
-     test_includes,
-     test_module_name,
-     test_outdir,
-     test_parse_path,
-     test_http_port,
-     test_relative_path].
+    [
+        test_file_type,
+        test_compile,
+        test_eunit,
+        test_ct,
+        test_get_env,
+        test_home,
+        test_includes,
+        test_module_name,
+        test_outdir,
+        test_parse_path,
+        test_http_port,
+        test_relative_path
+    ].
 
 test_http_port(_Config) ->
     65000 = edt:http_port(),
@@ -69,11 +71,13 @@ test_includes(Config) ->
     filelib:ensure_dir(filename:join(CApp ++ ["test", "t.erl"])),
 
     Actual = edt:includes(),
-    Expected = [filename:join(App ++ ["include"]),
-                filename:join(App ++ ["src"]),
-                filename:join(CApp ++ ["include"]),
-                filename:join(CApp ++ ["src"]),
-                filename:join([PrivDir, "include"])],
+    Expected = [
+        filename:join(App ++ ["include"]),
+        filename:join(App ++ ["src"]),
+        filename:join(CApp ++ ["include"]),
+        filename:join(CApp ++ ["src"]),
+        filename:join([PrivDir, "include"])
+    ],
     Expected = Actual,
     ok.
 
@@ -182,17 +186,17 @@ test_compile(Config) ->
     {error, {File0, unknown}} = edt:compile(File0),
 
     {error, {File1, [{File1, Errors1}], Warnings1}} = edt:compile("src/non_existing.erl"),
-    [{none,compile,{epp,enoent}}] = Errors1,
+    [{none, compile, {epp, enoent}}] = Errors1,
     [] = Warnings1,
 
     File2 = Home ++ "src/test_compile_fail.erl",
     {error, {File2, [{File2, Errors2}], Warnings2}} = edt:compile(File2),
-    [{4, erl_parse, ["syntax error before: ",[]]}] = Errors2,
+    [{4, erl_parse, ["syntax error before: ", []]}] = Errors2,
     [] = Warnings2,
 
     File2 = Home ++ "src/test_compile_fail.erl",
     {error, {File2, [{File2, Errors2}], Warnings2}} = edt:compile(File2, [strong_validation]),
-    [{4, erl_parse, ["syntax error before: ",[]]}] = Errors2,
+    [{4, erl_parse, ["syntax error before: ", []]}] = Errors2,
     [] = Warnings2,
 
     NewEbinDir = Cwd ++ "/_build/default/lib/" ++ TestDir ++ "/ebin",
@@ -217,7 +221,6 @@ test_eunit(Config) ->
     ok = edt:test(eunit, eunit_test1, test_one, []),
     ok = edt:test(eunit, eunit_test1, test_generator_one_, []),
     ok.
-
 
 test_ct(Config) ->
     Home = ?config(home, Config),
