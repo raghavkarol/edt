@@ -21,7 +21,7 @@
 mfa_width() ->
     -60.
 indent(I) ->
-    string:join(lists:duplicate(I bsl 1, " "), "").
+    string:join(lists:duplicate(I, " "), "").
 
 to_string1({mfa, {Indent, M, F, A}}) ->
     Padding = indent(Indent),
