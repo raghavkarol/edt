@@ -74,7 +74,7 @@ stop() ->
 trace(M) when is_atom(M) ->
     trace(M, '_');
 trace(Specs) when is_list(Specs) ->
-    TOpts = default_trace_opts(),
+    TOpts = default_opts(topts),
     trace_opts(Specs, TOpts).
 
 trace(M, F) ->
@@ -115,7 +115,7 @@ trace(M, F, ArgSpec, FOpts) ->
 %% can be related to the parent.
 %%
 trace_opts(Specs, TOpts) ->
-    TOpts1 = maps:merge(default_trace_opts(), TOpts),
+    TOpts1 = maps:merge(default_opts(topts), TOpts),
     Specs1 = lists:map(fun to_trace_spec/1, Specs),
     gen_server:call(?SERVER, {trace, Specs1, TOpts1}).
 
@@ -172,15 +172,14 @@ terminate(_Reason, _State) ->
 %% ---------------------------------------------------------
 %% Internal functions
 %% ---------------------------------------------------------
-default_trace_opts() ->
+default_opts(topts) ->
     Track = edt:get_env(profile_track_calls, false),
     Max = edt:get_env(profile_max_calls, 100),
     #{
         track_calls => Track,
         max_calls => Max
-    }.
-
-default_trace_fopts() ->
+    };
+default_opts(fopts) ->
     Capture = edt:get_env(profile_capture, false),
     StartContext = edt:get_env(profile_start_context, false),
     #{
@@ -355,10 +354,10 @@ maybe_stop_context(Pid, M, F, State) ->
 to_trace_spec(M) when is_atom(M) ->
     to_trace_spec({M, '_'});
 to_trace_spec({M, F}) ->
-    FOpts = default_trace_fopts(),
+    FOpts = default_opts(fopts),
     to_trace_spec({M, F, '_', FOpts});
 to_trace_spec({M, F, FOpts}) ->
-    FOpts1 = maps:merge(default_trace_fopts(), FOpts),
+    FOpts1 = maps:merge(default_opts(fopts), FOpts),
     to_trace_spec({M, F, FOpts1, '_'});
 to_trace_spec({_, _, _, _} = Spec) ->
     Spec.
@@ -386,7 +385,7 @@ maybe_capture_result(_, _) ->
     '$not_captured'.
 
 fopts(M, F, Opts) ->
-    Default = default_trace_fopts(),
+    Default = default_opts(fopts),
     Map1 = maps:get({M, '_'}, Opts, Default),
     maps:get({M, F}, Opts, Map1).
 

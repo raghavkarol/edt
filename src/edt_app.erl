@@ -45,7 +45,7 @@ start_cowboy(true) ->
         [{'_', [{'_', edt_http, #{}}]}]
     ),
     Port = edt:http_port(),
-    {ok, Ref} = cowboy:start_clear(
+    {ok, _Ref} = cowboy:start_clear(
         edt_http_listener,
         [{port, Port}],
         #{env => #{dispatch => Dispatch}}
