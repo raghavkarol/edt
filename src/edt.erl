@@ -16,6 +16,7 @@
     file_type/1,
     get_env/1,
     get_env/2,
+    set_env/2,
     includes/0
 ]).
 
@@ -284,6 +285,10 @@ get_env(Key, Default) when is_atom(Key) ->
 
 get_env(Key) ->
     get_env(Key, undefined).
+
+-spec set_env(Key :: atom(), Value :: any()) -> any().
+set_env(Key, Value) ->
+    application:set_env(edt, Key, Value).
 
 %% internal functions
 to_osenv_var(Key) ->
