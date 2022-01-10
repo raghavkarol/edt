@@ -163,7 +163,7 @@ handle_info({return_from, {Pid, M, F, Arity, Result, EndTime, EndReds}}, State) 
     maybe_track_exceptions(State, Pid, ExCalls),
     %% TODO: summary for exception calls as well?
 
-    % Store aggregatee results accross pids
+    % Store aggregate results accros pids
     edt_profile_store:track_summary(ContextId, Pid, Call, Arity, EndTime, EndReds),
     {noreply, State2}.
 
