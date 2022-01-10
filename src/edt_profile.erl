@@ -86,8 +86,8 @@ trace(M, F, FOpts) ->
     trace(Specs).
 
 %% link @{trace_opt/2}
-trace(M, F, FOpts, ArgSpec) ->
-    Specs = [to_trace_spec({M, F, FOpts, ArgSpec})],
+trace(M, F, ArgSpec, FOpts) ->
+    Specs = [to_trace_spec({M, F, ArgSpec, FOpts})],
     trace(Specs).
 
 %%
@@ -147,7 +147,6 @@ handle_cast(_Request, State) ->
 
 handle_info({call, {Pid, M, F, Args, Arity, StartTime, StartReds}}, State) ->
     #state{seq_no = SeqNo, call_stack = Stack} = State,
-    %% io:format("~s:~p: handle_info call: ~p:~p ~n", [string:replace(code:which(?MODULE), ".beam", ".erl"), ?LINE, M, F]),
     {ContextId, State1} = maybe_start_context(Pid, M, F, State),
     Call = new_call(M, F, Args, Arity, SeqNo, StartTime, StartReds),
     Stack1 = push(Stack, Pid, Call),
@@ -357,7 +356,7 @@ to_trace_spec(M) when is_atom(M) ->
     to_trace_spec({M, '_'});
 to_trace_spec({M, F}) ->
     FOpts = default_trace_fopts(),
-    to_trace_spec({M, F, FOpts, '_'});
+    to_trace_spec({M, F, '_', FOpts});
 to_trace_spec({M, F, FOpts}) ->
     FOpts1 = maps:merge(default_trace_fopts(), FOpts),
     to_trace_spec({M, F, FOpts1, '_'});
@@ -410,7 +409,7 @@ fun_capture_args(Opts, Caller) ->
 
 init_tracer(Specs, Opts) ->
     Specs1 = lists:map(
-        fun({M, F, _FOpts, ArgSpec}) ->
+        fun({M, F, ArgSpec, _FOpts}) ->
             {M, F, [{ArgSpec, [], [{return_trace}]}]}
         end,
         Specs
@@ -426,7 +425,7 @@ init_tracer(Specs, Opts) ->
 
 trace1(Specs, TOpts) ->
     Opts1 = lists:foldl(
-        fun({M, F, FOpts, _ArgSpec}, Acc) ->
+        fun({M, F, _ArgSpec, FOpts}, Acc) ->
             Acc#{{M, F} => FOpts}
         end,
         #{},

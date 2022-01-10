@@ -103,6 +103,6 @@ handle(#{path := <<"/edt/trace">>} = Req) ->
         function := Func
     } = cowboy_req:match_qs([module, function], Req),
     Opts = #{track_calls => true, max_calls => 10},
-    Specs = [{edt_lib:to_atom(Module), edt_lib:to_atom(Func), #{capture => true}}],
+    Specs = [{edt_lib:to_atom(Module), edt_lib:to_atom(Func), '_', #{capture => true}}],
     Result = edt_profile:trace_opts(Specs, Opts),
     edt_lib:to_binary(Result).

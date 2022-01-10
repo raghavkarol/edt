@@ -98,7 +98,7 @@ compile_opts(Path) ->
     [export_all, debug_info, {d, 'TEST'}, return] ++ Includes ++ OutDir.
 
 eunit_opts() ->
-    [no_tty, {report, {unite_compact, [profile]}}].
+    [].
 
 includes() ->
     Home = home(),
