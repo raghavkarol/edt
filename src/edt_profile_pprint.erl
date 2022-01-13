@@ -92,7 +92,7 @@ header(Fields, #srec{}) ->
         {context_id, {10, "context_id"}},
         {pid, {15, "pid"}},
         {count, {10, "count"}},
-        {time, {10, "time"}},
+        {time, {10, "time (us)"}},
         {reductions, {15, "reductions"}}
     ],
     case Fields of
@@ -106,7 +106,7 @@ header(Fields, #crec{}) ->
         {seq_num, {10, "seq_num"}},
         {id, {10, "id"}},
         {pid, {15, "pid"}},
-        {time, {10, "time"}},
+        {time, {10, "time (us)"}},
         {reductions, {15, "reductions"}},
         {return, {10, "return"}}
     ],
