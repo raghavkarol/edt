@@ -246,8 +246,15 @@ ct(Module, TestCase, Opts) ->
             [{suite, Module} || Module /= undefined] ++
             [{testcase, TestCase} || TestCase /= undefined],
     Opts2 = Opts1 ++ Opts,
+    Opts3 =
+        case filelib:is_file("cover.spec") of
+            true ->
+                Opts2 ++ [{cover, "./cover.spec"}];
+            false ->
+                Opts2
+        end,
     filelib:ensure_dir(LogDir),
-    ct:run_test(Opts2).
+    ct:run_test(Opts3).
 
 ct_groups(Module, Case) ->
     Group =
