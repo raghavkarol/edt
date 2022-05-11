@@ -74,7 +74,7 @@ stop() ->
 trace(M) when is_atom(M) ->
     trace(M, '_');
 trace(Specs) when is_list(Specs) ->
-    TOpts = default_trace_opts(),
+    TOpts = default_opts(topts),
     trace_opts(Specs, TOpts).
 
 trace(M, F) ->
@@ -86,8 +86,8 @@ trace(M, F, FOpts) ->
     trace(Specs).
 
 %% link @{trace_opt/2}
-trace(M, F, FOpts, ArgSpec) ->
-    Specs = [to_trace_spec({M, F, FOpts, ArgSpec})],
+trace(M, F, ArgSpec, FOpts) ->
+    Specs = [to_trace_spec({M, F, ArgSpec, FOpts})],
     trace(Specs).
 
 %%
@@ -115,7 +115,7 @@ trace(M, F, FOpts, ArgSpec) ->
 %% can be related to the parent.
 %%
 trace_opts(Specs, TOpts) ->
-    TOpts1 = maps:merge(default_trace_opts(), TOpts),
+    TOpts1 = maps:merge(default_opts(topts), TOpts),
     Specs1 = lists:map(fun to_trace_spec/1, Specs),
     gen_server:call(?SERVER, {trace, Specs1, TOpts1}).
 
@@ -147,7 +147,6 @@ handle_cast(_Request, State) ->
 
 handle_info({call, {Pid, M, F, Args, Arity, StartTime, StartReds}}, State) ->
     #state{seq_no = SeqNo, call_stack = Stack} = State,
-    %% io:format("~s:~p: handle_info call: ~p:~p ~n", [string:replace(code:which(?MODULE), ".beam", ".erl"), ?LINE, M, F]),
     {ContextId, State1} = maybe_start_context(Pid, M, F, State),
     Call = new_call(M, F, Args, Arity, SeqNo, StartTime, StartReds),
     Stack1 = push(Stack, Pid, Call),
@@ -164,7 +163,7 @@ handle_info({return_from, {Pid, M, F, Arity, Result, EndTime, EndReds}}, State) 
     maybe_track_exceptions(State, Pid, ExCalls),
     %% TODO: summary for exception calls as well?
 
-    % Store aggregatee results accross pids
+    % Store aggregate results accros pids
     edt_profile_store:track_summary(ContextId, Pid, Call, Arity, EndTime, EndReds),
     {noreply, State2}.
 
@@ -173,15 +172,14 @@ terminate(_Reason, _State) ->
 %% ---------------------------------------------------------
 %% Internal functions
 %% ---------------------------------------------------------
-default_trace_opts() ->
+default_opts(topts) ->
     Track = edt:get_env(profile_track_calls, false),
     Max = edt:get_env(profile_max_calls, 100),
     #{
         track_calls => Track,
         max_calls => Max
-    }.
-
-default_trace_fopts() ->
+    };
+default_opts(fopts) ->
     Capture = edt:get_env(profile_capture, false),
     StartContext = edt:get_env(profile_start_context, false),
     #{
@@ -356,10 +354,10 @@ maybe_stop_context(Pid, M, F, State) ->
 to_trace_spec(M) when is_atom(M) ->
     to_trace_spec({M, '_'});
 to_trace_spec({M, F}) ->
-    FOpts = default_trace_fopts(),
-    to_trace_spec({M, F, FOpts, '_'});
+    FOpts = default_opts(fopts),
+    to_trace_spec({M, F, '_', FOpts});
 to_trace_spec({M, F, FOpts}) ->
-    FOpts1 = maps:merge(default_trace_fopts(), FOpts),
+    FOpts1 = maps:merge(default_opts(fopts), FOpts),
     to_trace_spec({M, F, FOpts1, '_'});
 to_trace_spec({_, _, _, _} = Spec) ->
     Spec.
@@ -387,7 +385,7 @@ maybe_capture_result(_, _) ->
     '$not_captured'.
 
 fopts(M, F, Opts) ->
-    Default = default_trace_fopts(),
+    Default = default_opts(fopts),
     Map1 = maps:get({M, '_'}, Opts, Default),
     maps:get({M, F}, Opts, Map1).
 
@@ -410,7 +408,7 @@ fun_capture_args(Opts, Caller) ->
 
 init_tracer(Specs, Opts) ->
     Specs1 = lists:map(
-        fun({M, F, _FOpts, ArgSpec}) ->
+        fun({M, F, ArgSpec, _FOpts}) ->
             {M, F, [{ArgSpec, [], [{return_trace}]}]}
         end,
         Specs
@@ -426,7 +424,7 @@ init_tracer(Specs, Opts) ->
 
 trace1(Specs, TOpts) ->
     Opts1 = lists:foldl(
-        fun({M, F, FOpts, _ArgSpec}, Acc) ->
+        fun({M, F, _ArgSpec, FOpts}, Acc) ->
             Acc#{{M, F} => FOpts}
         end,
         #{},

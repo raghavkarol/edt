@@ -13,6 +13,7 @@
 ]).
 
 -export([
+    add/1,
     add/2,
     delete/1,
     list/0
@@ -107,6 +108,12 @@ add(Name, {Mod, Fun, Args} = MFArgs) when
     is_list(Args)
 ->
     gen_server:call(?SERVER, {add, {Name, MFArgs}}).
+
+%% @doc Add a post action called 'test' that runs tests in the given module
+%%
+%% see {@link add/2}
+add({test, Module}) ->
+    add(test, fun() -> edt_api:test(Module) end).
 
 delete(Name) when is_atom(Name) ->
     gen_server:call(?SERVER, {delete, Name}).

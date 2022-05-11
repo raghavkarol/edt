@@ -42,7 +42,7 @@ test_trace1_without_opts(_Config) ->
     ok.
 
 test_trace1_with_opts(_Config) ->
-    edt_profile:trace([{edt_profile_SUITE, one, #{capture => true, start_context => true}}]),
+    edt_profile:trace([{edt_profile_SUITE, one, '_', #{capture => true, start_context => true}}]),
     one(),
     timer:sleep(100),
     edt_profile_pprint:summary(),
@@ -56,14 +56,14 @@ test_trace2(_Config) ->
     ok.
 
 test_trace3(_Config) ->
-    edt_profile:trace(edt_profile_SUITE, one, #{capture => true, start_context => true}),
+    edt_profile:trace(edt_profile_SUITE, one, '_', #{capture => true, start_context => true}),
     one(),
     timer:sleep(100),
     edt_profile_pprint:summary(),
     ok.
 
 test_trace4(_Config) ->
-    edt_profile:trace(edt_profile_SUITE, one, #{capture => true, start_context => true}, '_'),
+    edt_profile:trace(edt_profile_SUITE, one, '_', #{capture => true, start_context => true}),
     one(),
     timer:sleep(100),
     edt_profile_pprint:summary(),
@@ -94,7 +94,7 @@ test_call_graph(_Config) ->
     ok.
 
 test_capture(_Config) ->
-    Specs = [{edt_profile_SUITE, one, #{capture => true}}],
+    Specs = [{edt_profile_SUITE, one, '_', #{capture => true}}],
     Opts = #{track_calls => true, max_calls => 10},
     edt_profile:trace_opts(Specs, Opts),
     one(),

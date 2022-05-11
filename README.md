@@ -83,3 +83,15 @@ available on ELPA with the following configuration.
 ```
 
 See [flycheck_edt](examples/flycheck_edt)
+
+# EDT Profile
+
+What is edt_profile, examples of how to use it.
+
+## Supported environment variables
+
+```bash
+EDT_PROFILE_TRACK_CALLS=true
+EDT_PROFILE_MAX_CALLS=1000
+EDT_PROFILE_CAPTURE=true
+```

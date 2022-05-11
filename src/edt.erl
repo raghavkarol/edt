@@ -16,6 +16,7 @@
     file_type/1,
     get_env/1,
     get_env/2,
+    set_env/2,
     includes/0
 ]).
 
@@ -98,7 +99,7 @@ compile_opts(Path) ->
     [export_all, debug_info, {d, 'TEST'}, return] ++ Includes ++ OutDir.
 
 eunit_opts() ->
-    [no_tty, {report, {unite_compact, [profile]}}].
+    [].
 
 includes() ->
     Home = home(),
@@ -133,16 +134,16 @@ home() ->
     edt:get_env(home, Dir).
 
 ignore_regex() ->
-    edt_lib:to_binary(edt:get_env(ignore_regex, "")).
+    edt:get_env(ignore_regex, "").
 
 auto_process() ->
-    edt_lib:to_boolean(edt:get_env(auto_process, "true")).
+    edt:get_env(auto_process, "true").
 
 http_port() ->
-    edt_lib:to_integer(edt:get_env(http_port, "65000")).
+    edt:get_env(http_port, "65000").
 
 enable_http_server() ->
-    edt_lib:to_boolean(edt:get_env(enable_http_server, "0")).
+    edt:get_env(enable_http_server, "false").
 
 %% ---------------------------------------------------------
 %% Internal Functions
@@ -245,8 +246,15 @@ ct(Module, TestCase, Opts) ->
             [{suite, Module} || Module /= undefined] ++
             [{testcase, TestCase} || TestCase /= undefined],
     Opts2 = Opts1 ++ Opts,
+    Opts3 =
+        case filelib:is_file("cover.spec") of
+            true ->
+                Opts2 ++ [{cover, "./cover.spec"}];
+            false ->
+                Opts2
+        end,
     filelib:ensure_dir(LogDir),
-    ct:run_test(Opts2).
+    ct:run_test(Opts3).
 
 ct_groups(Module, Case) ->
     Group =
@@ -280,12 +288,34 @@ ct_groups(Module, Case) ->
 -spec get_env(Key :: atom(), Default :: any()) -> any().
 get_env(Key, Default) when is_atom(Key) ->
     Default1 = os:getenv(to_osenv_var(Key), Default),
-    application:get_env(edt, Key, Default1).
+    Value = application:get_env(edt, Key, Default1),
+    maybe_convert(Key, Value).
 
 get_env(Key) ->
     get_env(Key, undefined).
+
+-spec set_env(Key :: atom(), Value :: any()) -> any().
+set_env(Key, Value) ->
+    application:set_env(edt, Key, Value).
 
 %% internal functions
 to_osenv_var(Key) ->
     Key1 = atom_to_list(Key),
     "EDT_" ++ string:uppercase(Key1).
+
+maybe_convert(profile_track_calls, Value) ->
+    edt_lib:to_boolean(Value);
+maybe_convert(profile_capture, Value) ->
+    edt_lib:to_boolean(Value);
+maybe_convert(profile_max_calls, Value) ->
+    edt_lib:to_integer(Value);
+maybe_convert(auto_process, Value) ->
+    edt_lib:to_boolean(Value);
+maybe_convert(http_port, Value) ->
+    edt_lib:to_integer(Value);
+maybe_convert(enable_http_server, Value) ->
+    edt_lib:to_boolean(Value);
+maybe_convert(ignore_regex, Value) ->
+    edt_lib:to_binary(Value);
+maybe_convert(_, Value) ->
+    Value.

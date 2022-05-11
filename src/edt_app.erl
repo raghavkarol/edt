@@ -33,21 +33,29 @@ start(_StartType, _StartArgs) ->
                     ok
             end
     end,
-    init_cowboy(edt:enable_http_server()),
+    start_cowboy(edt:enable_http_server()),
     edt_sup:start_link().
 
 stop(_State) ->
+    stop_cowboy(edt:enable_http_server()),
     ok.
 
-init_cowboy(true) ->
+start_cowboy(true) ->
     Dispatch = cowboy_router:compile(
         [{'_', [{'_', edt_http, #{}}]}]
     ),
     Port = edt:http_port(),
-    {ok, _} = cowboy:start_clear(
+    {ok, _Ref} = cowboy:start_clear(
         edt_http_listener,
         [{port, Port}],
         #{env => #{dispatch => Dispatch}}
-    );
-init_cowboy(_) ->
+    ),
+    ok;
+start_cowboy(_) ->
+    ok.
+
+stop_cowboy(true) ->
+    cowboy:stop_listener(edt_http_listener),
+    ok;
+stop_cowboy(_) ->
     ok.

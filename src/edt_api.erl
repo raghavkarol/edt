@@ -2,10 +2,11 @@
 %% Copyright 2020 Raghav Karol.
 %%
 -module(edt_api).
-
 -export([
     compile/1,
-    test/1, test/2, test/3
+    test/1,
+    test/2,
+    test/3
 ]).
 %% ---------------------------------------------------------
 %% API
