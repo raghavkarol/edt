@@ -406,6 +406,15 @@ fun_capture_args(Opts, Caller) ->
             ""
     end.
 
+init_recon_opts(Opts) ->
+    Fun = fun_capture_args(Opts, self()),
+    Pid = maps:get(pid, Opts, all),
+    [
+        {pid, Pid},
+        {scope, local},
+        {formatter, Fun}
+    ].
+
 init_tracer(Specs, Opts) ->
     Specs1 = lists:map(
         fun({M, F, ArgSpec, _FOpts}) ->
@@ -413,11 +422,7 @@ init_tracer(Specs, Opts) ->
         end,
         Specs
     ),
-    Fun = fun_capture_args(Opts, self()),
-    ReconOpts = [
-        {scope, local},
-        {formatter, Fun}
-    ],
+    ReconOpts = init_recon_opts(Opts),
     MaxCalls = maps:get(max_calls, Opts, 10),
     ok = recon_trace:clear(),
     recon_trace:calls(Specs1, MaxCalls, ReconOpts).
